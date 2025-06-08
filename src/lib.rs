@@ -100,6 +100,7 @@ pub struct DefenderProfile {
   pub feel_no_pain: i32,
   pub wounds: i32,
   //
+  pub has_cover: bool,
   pub minus_hit: i32,
   pub minus_wound: i32,
   /// Gives -1 to wound only when the attacker strength exceeds defender's
