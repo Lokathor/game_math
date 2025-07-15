@@ -23,44 +23,6 @@ end
 
 INTERCESSOR_BOLT_RIFLE = Weapon({})
 
-[[ Weapon Abilities
-Assault
-Rapid Fire
-Ignores Cover
-Twin-linked
-Pistol
-Torrent
-Lethal Hits
-Lance
-Indirect Fire
-Precision
-Blast
-Melta
-Heavy
-Hazardous
-Devastating Wounds
-Sustained Hits
-Extra Attacks
-CritHit-
-Anti-
-]]
-
-[[ Defender Attributes
-Movement
-Toughness
-ArmorSave
-InvulnSave
-FeelNoPain
-Health
-Leadership
-OC
-Stealth
-LoneOperative
-Cover
-StartingModels
-StartingHealthPerModel
-]]
-
 if not pcall(debug.getlocal, 4, 1) then
   -- in main script
   math.randomseed(os.time())
