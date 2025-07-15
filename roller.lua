@@ -38,6 +38,7 @@ end
 function Weapon (args)
   local out = {}
   out.ty = "weapon"
+  out.name = args.name or "NoName"
   out.range = args.range or 0
   out.num_attacks = args.num_attacks or 1
   out.to_hit = args.to_hit or 7
@@ -50,6 +51,8 @@ end
 
 function Model (args)
   local out = {}
+  out.ty = "model"
+  out.name = args.name or "NoName"
   out.movement = args.movement or 6
   out.toughness = args.toughness or 4
   out.armor_save = args.armor_save or 7
@@ -65,6 +68,8 @@ end
 
 function Unit (args)
   local out = {}
+  out.ty = "unit"
+  out.name = args.name or "NoName"
   out.models = args.models or {}
   out.starting_model_count = #(out.models)
   return out
@@ -88,25 +93,42 @@ function do_shooting_sequence (attackers, defenders)
       end
 
       local normal_hits = 0
-      local critial_hits = 0
+      local critical_hits = 0
+      local to_hit = weapon.to_hit
+      local to_crit_hit = 6 -- TODO: crit hit 5s
       for _=1,num_attacks do
         local hit_roll = d6()
-        if hit_roll == 6 then
-          -- TODO: ability to crit on 5s
-          critial_hits = critial_hits + 1
-        elseif hit_roll >= weapon.to_hit then
+        if hit_roll >= to_crit_hit then
+          critical_hits = critical_hits + 1
+        elseif hit_roll >= to_hit then
           normal_hits = normal_hits + 1
         end
         -- TODO: hit rerolls
       end
+      local wound_rolls = normal_hits + critical_hits
+
+      local normal_wounds = 0
+      local critical_wounds = 0
+      local to_wound = 4
+      local to_crit_wound = 6 -- TODO: anti
+      for _=1,wound_rolls do
+        local wound_roll = d6()
+        if wound_roll >= to_crit_wound then
+          critical_wound = critical_wounds + 1
+        elseif wound_roll >= to_wound then
+          normal_wounds = normal_wounds + 1
+        end
+        -- TODO: wound rerolls
+      end
+      local total_wounds = normal_wounds + critical_wounds
       
-      print("normal_hits: "..normal_hits)
-      print("critial_hits: "..critial_hits)
+      print("total_wounds:"..total_wounds)
     end
   end
 end
 
 INTERCESSOR_BOLT_RIFLE = Weapon{
+  name = "Bolt Rifle (focused)",
   range = 24,
   num_attacks = 4, -- assume focused fire
   to_hit = 3,
@@ -117,6 +139,7 @@ INTERCESSOR_BOLT_RIFLE = Weapon{
 }
 
 BASIC_INTERCESSOR = Model{
+  name = "Intercessor",
   movement = 6,
   toughness = 4,
   armor_save = 3,
@@ -127,6 +150,7 @@ BASIC_INTERCESSOR = Model{
 }
 
 BASIC_INTERCESSOR_SQUAD = Unit{
+  name = "Intercessors",
   models = {
     recursive_clone(BASIC_INTERCESSOR),
     recursive_clone(BASIC_INTERCESSOR),
