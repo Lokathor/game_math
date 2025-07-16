@@ -35,6 +35,28 @@ function d3 ()
   return math.random(1,3)
 end
 
+function resolve_expression (x)
+  if type(x) == "number" then
+    return x
+  elseif type(x) == "function" then
+    return x()
+  elseif x == "d6" or x == "1d6" then
+    return d6()
+  elseif x == "d6+1" or x == "1d6+1" then
+    return d6()+1
+  elseif x=="d3" or x=="1d3" then
+    return d3()
+  elseif x=="d3+1" or x=="1d3+1" then
+    return d3()+1
+  elseif x=="2d6" then
+    return d6()+d6()
+  elseif x=="2d3" then
+      return d3()+d3()
+  else
+    error("unknown expression:"..tostring(x))
+  end
+end
+
 function Weapon (args)
   local out = {}
   out.ty = "weapon"
@@ -75,6 +97,13 @@ function Unit (args)
   return out
 end
 
+function allocate_attack (defenders)
+  -- TODO: pick a defender properly
+  for k,v in pairs(defenders.models) do
+    return k
+  end
+end
+
 function do_shooting_sequence (attackers, defenders)
   local blast_bonus = #(defenders.models) // 5
   --print("blast bonus: "..blast_bonus)
@@ -82,12 +111,7 @@ function do_shooting_sequence (attackers, defenders)
     --print("attacker: " .. fmt_table(attacker))
     for _,weapon in pairs(attacker.weapons) do
       --print("weapon: " .. fmt_table(weapon))
-      local num_attacks
-      if type(weapon.num_attacks) == 'function' then
-        num_attacks = weapon.num_attacks()
-      else
-        num_attacks = weapon.num_attacks
-      end
+      local num_attacks = resolve_expression(weapon.num_attacks)
       if weapon.attrs.blast then
         num_attacks = num_attacks + blast_bonus
       end
@@ -121,8 +145,30 @@ function do_shooting_sequence (attackers, defenders)
         -- TODO: wound rerolls
       end
       local total_wounds = normal_wounds + critical_wounds
+
+      local damage = 0
+      for _=1,total_wounds do
+        local ti = allocate_attack(defenders)
+        local target = defenders.models[ti]
+        if target then
+          local save_roll = d6()
+          if save_roll < target.armor_save then
+            for _=1,weapon.damage do
+              local fnp_roll = d6()
+              if fnp_roll < target.fnp then
+                damage = damage + 1
+                target.health = target.health - 1
+              end
+            end
+          end
+          print("target.health: "..target.health)
+          if target.health < 1 then
+            defenders.models[ti] = nil
+          end
+        end
+      end
       
-      print("total_wounds:"..total_wounds)
+      print("damage: "..damage)
     end
   end
 end
