@@ -163,7 +163,7 @@ function do_shooting_sequence (attackers, defenders)
           end
           print("target.health: "..target.health)
           if target.health < 1 then
-            defenders.models[ti] = nil
+            table.remove(defenders.models, ti)
           end
         end
       end
