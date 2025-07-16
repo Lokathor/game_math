@@ -146,29 +146,25 @@ function do_shooting_sequence (attackers, defenders)
       end
       local total_wounds = normal_wounds + critical_wounds
 
-      local damage = 0
       for _=1,total_wounds do
         local ti = allocate_attack(defenders)
         local target = defenders.models[ti]
         if target then
-          local save_roll = d6()
+          local save_roll = d6() - weapon.ap
           if save_roll < target.armor_save then
-            for _=1,weapon.damage do
+            local potential_damage = resolve_expression(weapon.damage)
+            for _=1,potential_damage do
               local fnp_roll = d6()
               if fnp_roll < target.fnp then
-                damage = damage + 1
                 target.health = target.health - 1
               end
             end
           end
-          print("target.health: "..target.health)
           if target.health < 1 then
             table.remove(defenders.models, ti)
           end
         end
       end
-      
-      print("damage: "..damage)
     end
   end
 end
@@ -195,6 +191,16 @@ INTERCESSOR_FRAG_GRENADE_LAUNCHER = Weapon{
   attrs = { blast = true },
 }
 
+INTERCESSOR_KRAK_GRENADE_LAUNCHER = Weapon{
+  name = "Krak Grenade Launcher",
+  range = 24,
+  num_attacks = 1,
+  to_hit = 3,
+  strength = 9,
+  ap = 2,
+  damage = "d3",
+}
+
 BASIC_INTERCESSOR = Model{
   name = "Intercessor",
   movement = 6,
@@ -216,7 +222,7 @@ BASIC_INTERCESSOR_SQUAD = Unit{
     recursive_clone(BASIC_INTERCESSOR),
   }
 }
-BASIC_INTERCESSOR_SQUAD.models[4].weapons[2] = recursive_clone(INTERCESSOR_FRAG_GRENADE_LAUNCHER)
+BASIC_INTERCESSOR_SQUAD.models[4].weapons[2] = recursive_clone(INTERCESSOR_KRAK_GRENADE_LAUNCHER)
 
 if not pcall(debug.getlocal, 4, 1) then
   -- in main script
