@@ -173,7 +173,7 @@ function do_shooting_sequence (attackers, defenders)
   end
 end
 
-INTERCESSOR_BOLT_RIFLE = Weapon{
+INTERCESSOR_FOCUSED_BOLT_RIFLE = Weapon{
   name = "Bolt Rifle (focused)",
   range = 24,
   num_attacks = 4, -- assume focused fire
@@ -184,6 +184,17 @@ INTERCESSOR_BOLT_RIFLE = Weapon{
   attrs = { assault=true, heavy=true },
 }
 
+INTERCESSOR_FRAG_GRENADE_LAUNCHER = Weapon{
+  name = "Frag Grenade Launcher",
+  range = 24,
+  num_attacks = "d3",
+  to_hit = 3,
+  strength = 4,
+  ap = 0,
+  damage = 1,
+  attrs = { blast = true },
+}
+
 BASIC_INTERCESSOR = Model{
   name = "Intercessor",
   movement = 6,
@@ -191,8 +202,8 @@ BASIC_INTERCESSOR = Model{
   armor_save = 3,
   wounds = 2,
   leadership = 6,
-  oc = 1,
-  weapons = {INTERCESSOR_BOLT_RIFLE},
+  oc = 2,
+  weapons = {INTERCESSOR_FOCUSED_BOLT_RIFLE},
 }
 
 BASIC_INTERCESSOR_SQUAD = Unit{
@@ -205,6 +216,7 @@ BASIC_INTERCESSOR_SQUAD = Unit{
     recursive_clone(BASIC_INTERCESSOR),
   }
 }
+BASIC_INTERCESSOR_SQUAD.models[4].weapons[2] = recursive_clone(INTERCESSOR_FRAG_GRENADE_LAUNCHER)
 
 if not pcall(debug.getlocal, 4, 1) then
   -- in main script
