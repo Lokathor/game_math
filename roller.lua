@@ -57,6 +57,20 @@ function resolve_expression (x)
   end
 end
 
+function base_to_wound (strength, toughness)
+  if strength >= (toughness*2) then
+    return 2
+  elseif strength > toughness then
+    return 3
+  elseif strength == toughness then
+    return 4
+  elseif strength <= (toughness//2) then
+    return 6
+  else
+    return 5
+  end
+end
+
 function Weapon (args)
   local out = {}
   out.ty = "weapon"
@@ -111,6 +125,9 @@ function do_shooting_sequence (attackers, defenders)
     --print("attacker: " .. fmt_table(attacker))
     for _,weapon in pairs(attacker.weapons) do
       --print("weapon: " .. fmt_table(weapon))
+      if #(defenders.models) == 0 then
+        return
+      end
       local num_attacks = resolve_expression(weapon.num_attacks)
       if weapon.attrs.blast then
         num_attacks = num_attacks + blast_bonus
@@ -133,7 +150,7 @@ function do_shooting_sequence (attackers, defenders)
 
       local normal_wounds = 0
       local critical_wounds = 0
-      local to_wound = 4
+      local to_wound = base_to_wound(weapon.strength, defenders.models[1].toughness)
       local to_crit_wound = 6 -- TODO: anti
       for _=1,wound_rolls do
         local wound_roll = d6()
@@ -159,9 +176,9 @@ function do_shooting_sequence (attackers, defenders)
                 target.health = target.health - 1
               end
             end
-          end
-          if target.health < 1 then
-            table.remove(defenders.models, ti)
+            if target.health < 1 then
+              table.remove(defenders.models, ti)
+            end
           end
         end
       end
@@ -172,7 +189,7 @@ end
 INTERCESSOR_FOCUSED_BOLT_RIFLE = Weapon{
   name = "Bolt Rifle (focused)",
   range = 24,
-  num_attacks = 4, -- assume focused fire
+  num_attacks = 4,
   to_hit = 3,
   strength = 4,
   ap = 1,
@@ -201,6 +218,16 @@ INTERCESSOR_KRAK_GRENADE_LAUNCHER = Weapon{
   damage = "d3",
 }
 
+PLASMA_PISTOL_NORMAL = Weapon{
+  name = "Plasma Pistol (normal)",
+  range = 12,
+  num_attacks = 1,
+  to_hit = 3,
+  strength = 7,
+  ap = 1,
+  damage = 1,
+}
+
 BASIC_INTERCESSOR = Model{
   name = "Intercessor",
   movement = 6,
@@ -223,6 +250,7 @@ BASIC_INTERCESSOR_SQUAD = Unit{
   }
 }
 BASIC_INTERCESSOR_SQUAD.models[4].weapons[2] = recursive_clone(INTERCESSOR_KRAK_GRENADE_LAUNCHER)
+BASIC_INTERCESSOR_SQUAD.models[5].weapons[1] = recursive_clone(PLASMA_PISTOL_NORMAL)
 
 if not pcall(debug.getlocal, 4, 1) then
   -- in main script
@@ -231,8 +259,13 @@ if not pcall(debug.getlocal, 4, 1) then
     math.random()
   end
   --
-  local attackers = recursive_clone(BASIC_INTERCESSOR_SQUAD)
-  local defenders = recursive_clone(BASIC_INTERCESSOR_SQUAD)
-  do_shooting_sequence(attackers, defenders)
-  print(#(defenders.models) .. " models survived the attack.");
+  local trials = 1000
+  local survivors = 0
+  for _=1,trials do
+    local attackers = recursive_clone(BASIC_INTERCESSOR_SQUAD)
+    local defenders = recursive_clone(BASIC_INTERCESSOR_SQUAD)
+    do_shooting_sequence(attackers, defenders)
+    survivors = survivors + #(defenders.models)
+  end
+  print("average survivors: "..(survivors/trials))
 end
