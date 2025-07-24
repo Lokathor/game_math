@@ -95,7 +95,9 @@ function Model (args)
   out.health = args.health or out.wounds
   out.leadership = args.leadership or 13
   out.oc = args.oc or 0
-  out.weapons = args.weapons or {}
+  out.guns = args.guns or {}
+  out.pistols = args.pistols or {}
+  out.melee = args.melee or {}
   return out
 end
 

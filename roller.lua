@@ -11,74 +11,61 @@ function allocate_attack (defenders)
   end
 end
 
+function cmp_weapon (left, right)
+  -- sorting non-number damage values is weird.
+  if type(left.damage) ~= "number" then
+    if type(right.damage) ~= "number" then
+      return left.name < right.name
+    else
+      return true
+    end
+  end
+  if type(right.damage) ~= "number" then
+    return false
+  end
+  -- now it's just numbers
+  if left.damage > right.damage then
+    return true
+  elseif left.damage < right.damage then
+    return false
+  else
+    return left.name < right.name
+  end
+end
+
 function do_shooting_sequence (attackers, defenders, distance)
+  print("shooting sequence!")
+  -- determine per-shoot-sequence values now
   local blast_bonus = #(defenders.models) // 5
-  --print("blast bonus: "..blast_bonus)
+  -- Determine what weapons can fire
+  local weps = {}
   for _,attacker in pairs(attackers.models) do
-    --print("attacker: " .. fmt_table(attacker))
-    for _,weapon in pairs(attacker.weapons) do
-      --print("weapon: " .. fmt_table(weapon))
-      if #(defenders.models) == 0 then
-        return
+    if distance <= 1 then
+      -- melee shooting
+      for _,pistol in pairs(attacker.pistols) do
+        table.insert(weps,pistol)
       end
-      local num_attacks = resolve_expression(weapon.num_attacks)
-      if weapon.attrs.blast then
-        num_attacks = num_attacks + blast_bonus
-      end
-
-      local normal_hits = 0
-      local critical_hits = 0
-      local to_hit = weapon.to_hit
-      local to_crit_hit = 6 -- TODO: crit hit 5s
-      for _=1,num_attacks do
-        local hit_roll = d6()
-        if hit_roll >= to_crit_hit then
-          critical_hits = critical_hits + 1
-        elseif hit_roll >= to_hit then
-          normal_hits = normal_hits + 1
-        end
-        -- TODO: hit rerolls
-      end
-      local wound_rolls = normal_hits + critical_hits
-
-      local normal_wounds = 0
-      local critical_wounds = 0
-      local to_wound = base_to_wound(weapon.strength, defenders.models[1].toughness)
-      local to_crit_wound = 6 -- TODO: anti
-      for _=1,wound_rolls do
-        local wound_roll = d6()
-        if wound_roll >= to_crit_wound then
-          critical_wound = critical_wounds + 1
-        elseif wound_roll >= to_wound then
-          normal_wounds = normal_wounds + 1
-        end
-        -- TODO: wound rerolls
-      end
-      local total_wounds = normal_wounds + critical_wounds
-
-      for _=1,total_wounds do
-        local ti = allocate_attack(defenders)
-        local target = defenders.models[ti]
-        if target then
-          local save_roll = d6() - weapon.ap
-          if save_roll < target.armor_save then
-            local potential_damage = resolve_expression(weapon.damage)
-            for _=1,potential_damage do
-              local fnp_roll = d6()
-              if fnp_roll < target.fnp then
-                target.health = target.health - 1
-              end
-            end
-            if target.health < 1 then
-              table.remove(defenders.models, ti)
-            end
-          end
+      -- TODO: Big Guns Never Tire
+    else
+      for _,gun in pairs(attacker.guns) do
+        if gun.range >= distance then
+          table.insert(weps,gun)
         end
       end
     end
   end
+  table.sort(weps, cmp_weapon)
+  -- devastating damage floats until the end
+  local devastating_damage = {}
+  for _,weapon in pairs(weps) do
+    if #(defenders.models) == 0 then
+      return
+    end
+    print("shooting: "..weapon.name)
+    -- TODO: shoot the weapon
+  end
+  -- TODO: allocate floating devastating damage
 end
-
 
 if not pcall(debug.getlocal, 4, 1) then
   -- in main script
@@ -87,12 +74,12 @@ if not pcall(debug.getlocal, 4, 1) then
     math.random()
   end
   --
-  local trials = 1000
+  local trials = 1
   local survivors = 0
   for _=1,trials do
     local attackers = recursive_clone(space_marines.datasheets.intercessor_squad)
     local defenders = recursive_clone(attackers)
-    do_shooting_sequence(attackers, defenders, 6)
+    do_shooting_sequence(attackers, defenders, 26)
     survivors = survivors + #(defenders.models)
   end
   print("average survivors: "..(survivors/trials))

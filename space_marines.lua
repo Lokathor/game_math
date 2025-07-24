@@ -98,9 +98,13 @@ space_marines.models.basic_intercessor = Model{
   wounds = 2,
   leadership = 6,
   oc = 2,
-  weapons = {
+  guns = {
     space_marines.weapons.bolt_rifle_focused,
+  },
+  pistols = {
     space_marines.weapons.bolt_pistol_default,
+  },
+  melee = {
     space_marines.weapons.close_combat_default,
   },
 }
@@ -113,12 +117,16 @@ space_marines.models.intercessor_krak = Model{
   wounds = 2,
   leadership = 6,
   oc = 2,
-  weapons = {
+  guns = {
     space_marines.weapons.bolt_rifle_focused,
     space_marines.weapons.krak_grenade_launcher,
+  },
+  pistols = {
     space_marines.weapons.bolt_pistol_default,
+  },
+  melee = {
     space_marines.weapons.close_combat_default,
-  }
+  },
 }
 
 space_marines.models.intercessor_fist_rifle = Model{
@@ -129,11 +137,15 @@ space_marines.models.intercessor_fist_rifle = Model{
   wounds = 2,
   leadership = 6,
   oc = 2,
-  weapons = {
+  guns = {
     space_marines.weapons.bolt_rifle_focused,
+  },
+  pistols = {
     space_marines.weapons.bolt_pistol_default,
+  },
+  melee = {
     space_marines.weapons.power_fist_3_3,
-  }
+  },
 }
 
 space_marines.datasheets.intercessor_squad = Unit{
