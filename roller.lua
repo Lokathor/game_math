@@ -11,7 +11,7 @@ function allocate_attack (defenders)
   end
 end
 
-function do_shooting_sequence (attackers, defenders)
+function do_shooting_sequence (attackers, defenders, distance)
   local blast_bonus = #(defenders.models) // 5
   --print("blast bonus: "..blast_bonus)
   for _,attacker in pairs(attackers.models) do
@@ -90,9 +90,9 @@ if not pcall(debug.getlocal, 4, 1) then
   local trials = 1000
   local survivors = 0
   for _=1,trials do
-    local attackers = recursive_clone(BASIC_INTERCESSOR_SQUAD)
-    local defenders = recursive_clone(BASIC_INTERCESSOR_SQUAD)
-    do_shooting_sequence(attackers, defenders)
+    local attackers = recursive_clone(space_marines.datasheets.intercessor_squad)
+    local defenders = recursive_clone(attackers)
+    do_shooting_sequence(attackers, defenders, 6)
     survivors = survivors + #(defenders.models)
   end
   print("average survivors: "..(survivors/trials))

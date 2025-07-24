@@ -1,6 +1,7 @@
 
 require "utils"
 
+space_marines = {}
 space_marines.weapons = {}
 space_marines.models = {}
 space_marines.datasheets = {}
@@ -118,7 +119,7 @@ space_marines.models.intercessor_krak = Model{
     space_marines.weapons.bolt_pistol_default,
     space_marines.weapons.close_combat_default,
   }
-},
+}
 
 space_marines.models.intercessor_fist_rifle = Model{
   name = "Intercessor Sergeant",
@@ -133,7 +134,7 @@ space_marines.models.intercessor_fist_rifle = Model{
     space_marines.weapons.bolt_pistol_default,
     space_marines.weapons.power_fist_3_3,
   }
-},
+}
 
 space_marines.datasheets.intercessor_squad = Unit{
   name = "Intercessors",
