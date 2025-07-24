@@ -1,7 +1,9 @@
 
 require "utils"
 
-INTERCESSOR_FOCUSED_BOLT_RIFLE = Weapon{
+SPACE_MARINE_WEAPONS = {}
+
+SPACE_MARINE_WEAPONS["Intercessor Bolt Rifle (focused)"] = Weapon{
   name = "Bolt Rifle (focused)",
   range = 24,
   num_attacks = 4,
