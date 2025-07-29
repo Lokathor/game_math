@@ -2,11 +2,11 @@
 function Weapon(args)
   local out = {}
   out.ty = "weapon"
-  out.name = args.name or "NoName"
-  out.range = args.range or 0
-  out.num_attacks = args.num_attacks or 1
-  out.to_hit = args.to_hit or 7
-  out.strength = args.strength or 1
+  out.name = args.name or error("name")
+  out.range = args.range or error("range")
+  out.attacks = args.attacks or error("attacks")
+  out.base_hit = args.base_hit or error("base_hit")
+  out.strength = args.strength or error("strength")
   out.ap = args.ap or 0
   out.damage = args.damage or 1
   out.attrs = args.attrs or {}
@@ -16,18 +16,17 @@ end
 function Model(args)
   local out = {}
   out.ty = "model"
-  out.name = args.name or "NoName"
-  out.movement = args.movement or 6
-  out.toughness = args.toughness or 4
-  out.armor_save = args.armor_save or 7
-  out.invuln_save = args.invuln_save or 7
-  out.fnp = args.fnp or 7
-  out.wounds = args.wounds or 1
+  out.name = args.name or error("name")
+  out.movement = args.movement or error("movement")
+  out.toughness = args.toughness or error("toughness")
+  out.armor = args.armor or error("armor")
+  out.invuln = args.invuln
+  out.fnp = args.fnp
+  out.wounds = args.wounds or error("wounds")
   out.health = args.health or out.wounds
-  out.leadership = args.leadership or 13
-  out.oc = args.oc or 0
-  out.guns = args.guns or {}
-  out.pistols = args.pistols or {}
+  out.leadership = args.leadership or error("leadership")
+  out.oc = args.oc or error("oc")
+  out.ranged = args.ranged or {}
   out.melee = args.melee or {}
   return out
 end
@@ -35,7 +34,7 @@ end
 function Unit(args)
   local out = {}
   out.ty = "unit"
-  out.name = args.name or "NoName"
+  out.name = args.name or error("name")
   out.models = args.models or {}
   out.starting_model_count = #(out.models)
   out.attrs = args.attrs or {}
