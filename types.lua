@@ -1,7 +1,7 @@
 
 function Weapon(args)
   local out = {}
-  out.ty = "weapon"
+  out.ty = "Weapon"
   out.name = args.name or error("name")
   out.range = args.range or error("range")
   out.attacks = args.attacks or error("attacks")
@@ -13,9 +13,21 @@ function Weapon(args)
   return out
 end
 
+function AttackProfile(args)
+  local out
+  out.ty = "AttackProfile"
+  out.attacks = args.attacks or error("attacks")
+  out.to_hit = args.to_hit or error("to_hit")
+  out.to_wound = args.to_wound or error("to_wound")
+  out.to_save = args.ap or error("to_save")
+  out.damage = args.damage or error("damage")
+  out.attrs = args.attrs or {}
+  return out
+end
+
 function Model(args)
   local out = {}
-  out.ty = "model"
+  out.ty = "Model"
   out.name = args.name or error("name")
   out.movement = args.movement or error("movement")
   out.toughness = args.toughness or error("toughness")
@@ -33,7 +45,7 @@ end
 
 function Unit(args)
   local out = {}
-  out.ty = "unit"
+  out.ty = "Unit"
   out.name = args.name or error("name")
   out.models = args.models or {}
   out.starting_model_count = #(out.models)
