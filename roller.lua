@@ -11,25 +11,21 @@ function allocate_attack (defenders)
   end
 end
 
-function cmp_weapon (left, right)
-  -- sorting non-number damage values is weird.
-  if type(left.damage) ~= "number" then
-    if type(right.damage) ~= "number" then
-      return left.name < right.name
-    else
-      return true
+function queue_shooting(model, distance, weps_to_shoot, hazard_checks)
+  local has_non_pistols = false
+  for _,weapon in pairs(model.weapons) do
+    has_non_pistols = has_non_pistols or not weapon.abilities.pistol
+  end
+  local block_pistols = has_non_pistols and not model.keywords.vehicle
+  for _,weapon in pairs(model.weapons) do
+    if weapon.range >= distance then
+      if distance > 1 or (weapon.abilities.pistol and not block_pistols) then
+        table.insert(weps_to_shoot, weapon)
+        if weapon.abilities.hazardous then
+          table.insert(hazard_checks, model)
+        end
+      end
     end
-  end
-  if type(right.damage) ~= "number" then
-    return false
-  end
-  -- now it's just numbers
-  if left.damage > right.damage then
-    return true
-  elseif left.damage < right.damage then
-    return false
-  else
-    return left.name < right.name
   end
 end
 
@@ -38,26 +34,14 @@ function do_shooting_sequence (attackers, defenders, distance)
   -- determine per-shoot-sequence values now
   local blast_bonus = #(defenders.models) // 5
   -- Determine what weapons can fire
-  local weps = {}
-  for _,attacker in pairs(attackers.models) do
-    if distance <= 1 then
-      -- melee shooting
-      for _,pistol in pairs(attacker.pistols) do
-        table.insert(weps,pistol)
-      end
-      -- TODO: Big Guns Never Tire
-    else
-      for _,gun in pairs(attacker.guns) do
-        if gun.range >= distance then
-          table.insert(weps,gun)
-        end
-      end
-    end
+  local weps_to_shoot = {}
+  local hazardous_checks = {}
+  for _,model in pairs(attackers.models) do
+    queue_shooting(model, distance, weps_to_shoot, hazardous_checks)
   end
-  table.sort(weps, cmp_weapon)
-  -- devastating damage floats until the end
-  local devastating_damage = {}
-  for _,weapon in pairs(weps) do
+  table.sort(weps_to_shoot, cmp_weapon)
+  local devastating_damage_queue = {}
+  for _,weapon in pairs(weps_to_shoot) do
     if #(defenders.models) == 0 then
       return
     end
@@ -65,6 +49,7 @@ function do_shooting_sequence (attackers, defenders, distance)
     -- TODO: shoot the weapon
   end
   -- TODO: allocate floating devastating damage
+  -- TODO: hazard checks
 end
 
 if not pcall(debug.getlocal, 4, 1) then
@@ -77,9 +62,9 @@ if not pcall(debug.getlocal, 4, 1) then
   local trials = 1
   local survivors = 0
   for _=1,trials do
-    local attackers = recursive_clone(space_marines.datasheets.intercessor_squad)
-    local defenders = recursive_clone(attackers)
-    do_shooting_sequence(attackers, defenders, 26)
+    local attackers = deep_clone(space_marines.datasheets.five_basic_intercessors)
+    local defenders = deep_clone(attackers)
+    do_shooting_sequence(attackers, defenders, 6)
     survivors = survivors + #(defenders.models)
   end
   print("average survivors: "..(survivors/trials))

@@ -52,6 +52,40 @@ function resolve_expression(x)
   end
 end
 
+function max_expression(x)
+  if type(x) == "number" then
+    return x
+  elseif x=="d6" or x=="1d6" then
+    return 6
+  elseif x=="d6+1" or x=="1d6+1" then
+    return 7
+  elseif x=="d3" or x=="1d3" then
+    return 3
+  elseif x=="d3+1" or x=="1d3+1" then
+    return 4
+  elseif x=="2d6" then
+    return 12
+  elseif x=="2d3" then
+    return 6
+  else
+    error("unknown expression:"..tostring(x))
+  end
+end
+
+-- true when left should sort earlier
+function cmp_weapon(left,right)
+  -- always sort highest damage first
+  local ldam = max_expression(left.damage)
+  local rdam = max_expression(right.damage)
+  if ldam > rdam then
+    return true
+  elseif ldam < rdam then
+    return false
+  end
+  -- fallback: just sort by name
+  return left.name < right.name
+end
+
 function base_to_wound(strength, toughness)
   if strength >= (toughness*2) then
     return 2
