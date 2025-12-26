@@ -28,7 +28,7 @@ pub fn do_shooting(
 
   // shoot the weapons
   for gun in shooting_weapons.iter() {
-    let hit_tn = gun.skill.unwrap_or_default() as i32;
+    let hit_tn = gun.skill as i32;
     let mut hits = 0;
     let mut attacks = gun.attacks.roll(g);
     for _ in 0..attacks {
@@ -94,7 +94,7 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
           name: "Lancer Laser Destroyer".into(),
           range: 72,
           attacks: Expr::_2,
-          skill: Some(3),
+          skill: 3,
           strength: 14,
           ap: 4,
           damage: Expr::D6(1, 3),
@@ -105,7 +105,7 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
           name: "Icarus Rocket Pod".into(),
           range: 24,
           attacks: Expr::D3(1, 0),
-          skill: Some(3),
+          skill: 3,
           strength: 8,
           ap: 1,
           damage: Expr::_2,
@@ -116,7 +116,7 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
           name: "Ironhail Heavy Stubber".into(),
           range: 36,
           attacks: Expr::_3,
-          skill: Some(3),
+          skill: 3,
           strength: 4,
           ap: 0,
           damage: Expr::_1,
@@ -127,7 +127,7 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
           name: "Fragstorm Grenade Launcher".into(),
           range: 18,
           attacks: Expr::D6(1, 0),
-          skill: Some(3),
+          skill: 3,
           strength: 4,
           ap: 0,
           damage: Expr::_1,
@@ -138,7 +138,7 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
           name: "Fragstorm Grenade Launcher".into(),
           range: 18,
           attacks: Expr::D6(1, 0),
-          skill: Some(3),
+          skill: 3,
           strength: 4,
           ap: 0,
           damage: Expr::_1,
@@ -150,7 +150,7 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
         name: "Armored_Hull".into(),
         range: 1,
         attacks: Expr::_3,
-        skill: Some(4),
+        skill: 4,
         strength: 6,
         ap: 0,
         damage: Expr::_1,
@@ -159,8 +159,71 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
       rules: vec![
         ModelRule::Vehicle,
         ModelRule::Smoke,
-        ModelRule::Imperial,
+        ModelRule::Imperium,
         ModelRule::EagleOptics,
+      ],
+      ..Default::default()
+    }],
+  }
+}
+
+pub fn ballistus_dreadnought_krak() -> Unit {
+  Unit {
+    name: "Ballistus Dreadnought".into(),
+    models: vec![Model {
+      name: "Ballistus Dreadnought".into(),
+      speed: 8,
+      toughness: 10,
+      armor: 2,
+      health: 12,
+      guns: vec![
+        Weapon {
+          name: "Ballistus Lascannon".into(),
+          range: 48,
+          attacks: Expr::_2,
+          skill: 3,
+          strength: 12,
+          ap: 3,
+          damage: Expr::D6(1, 1),
+          rules: vec![],
+        },
+        Weapon {
+          name: "Ballistus Missile Launcher (Krak)".into(),
+          range: 48,
+          attacks: Expr::_2,
+          skill: 3,
+          strength: 10,
+          ap: 2,
+          damage: Expr::D6(1, 0),
+          rules: vec![],
+        },
+        Weapon {
+          name: "Twin-linked Storm Bolter".into(),
+          range: 24,
+          attacks: Expr::_2,
+          skill: 3,
+          strength: 4,
+          ap: 0,
+          damage: Expr::_1,
+          rules: vec![WeaponRule::RapidFire2, WeaponRule::TwinLinked],
+        },
+      ],
+      sticks: vec![Weapon {
+        name: "Armored Feet".into(),
+        range: 1,
+        attacks: Expr::_5,
+        skill: 3,
+        strength: 7,
+        ap: 0,
+        damage: Expr::_1,
+        rules: vec![],
+      }],
+      rules: vec![
+        ModelRule::Vehicle,
+        ModelRule::Walker,
+        ModelRule::Imperium,
+        ModelRule::Dreadnought,
+        ModelRule::BallistusStrike,
       ],
       ..Default::default()
     }],
@@ -199,7 +262,7 @@ pub struct Weapon {
   pub name: String,
   pub range: u8,
   pub attacks: Expr,
-  pub skill: Option<u8>,
+  pub skill: u8,
   pub strength: u8,
   pub ap: u8,
   pub rules: Vec<WeaponRule>,
@@ -215,6 +278,8 @@ impl Expr {
   pub const _1: Self = Self::F(1);
   pub const _2: Self = Self::F(2);
   pub const _3: Self = Self::F(3);
+  pub const _4: Self = Self::F(4);
+  pub const _5: Self = Self::F(5);
 
   pub fn roll(&self, g: &mut PCG32) -> u8 {
     match self {
@@ -247,17 +312,21 @@ impl Default for Expr {
 pub enum ModelRule {
   Vehicle,
   Smoke,
-  Imperial,
-  LancerTank,
+  Imperium,
   EagleOptics,
+  Walker,
+  Dreadnought,
+  BallistusStrike,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum WeaponRule {
   Heavy,
   AntiFly2,
+  RapidFire2,
   RapidFire3,
   Blast,
+  TwinLinked,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -266,6 +335,7 @@ pub struct Effects {
   pub storm_of_fire: bool,
   pub devastator_doctrine: bool,
   pub attacker_movement: UnitMovement,
+  pub defender_below_half_strength: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
