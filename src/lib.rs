@@ -41,7 +41,19 @@ pub fn do_shooting(
         }
       }
     }
-    let mut wound_tn = 4;
+    let attacker_str = gun.strength;
+    let defender_toughness = defender.models[0].toughness;
+    let mut wound_tn = if attacker_str >= 2 * defender_toughness {
+      2
+    } else if attacker_str > defender_toughness {
+      3
+    } else if attacker_str == defender_toughness {
+      4
+    } else if attacker_str <= defender_toughness / 2 {
+      6
+    } else {
+      5
+    };
     let mut wounds = 0;
     for _ in 0..hits {
       if g.d6() >= wound_tn {
@@ -54,9 +66,10 @@ pub fn do_shooting(
       }
     }
     for _ in 0..wounds {
-      if g.d6() < 4 {
+      let save_tn = defender.models[0].armor + gun.ap;
+      if g.d6() < save_tn.into() {
         let mut dam = gun.damage.roll(g);
-        if dam < 6 && eagle_damage_reroll {
+        if dam <= 6 && eagle_damage_reroll {
           eagle_damage_reroll = false;
           dam = gun.damage.roll(g);
         }
