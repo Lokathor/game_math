@@ -29,7 +29,7 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
           strength: 8,
           ap: 1,
           damage: Expr::_2,
-          rules: vec![WeaponRule::Anti(ModelRule::Fly,2)],
+          rules: vec![WeaponRule::Anti(ModelRule::Fly, 2)],
           ..Default::default()
         },
         Weapon {
@@ -40,7 +40,7 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
           strength: 4,
           ap: 0,
           damage: Expr::_1,
-          rules: vec![WeaponRule::RapidFire3],
+          rules: vec![WeaponRule::RapidFire(Expr::_3)],
           ..Default::default()
         },
         Weapon {
@@ -125,7 +125,7 @@ pub fn ballistus_dreadnought_krak() -> Unit {
           strength: 4,
           ap: 0,
           damage: Expr::_1,
-          rules: vec![WeaponRule::RapidFire(2), WeaponRule::TwinLinked],
+          rules: vec![WeaponRule::RapidFire(Expr::_2), WeaponRule::TwinLinked],
         },
       ],
       sticks: vec![Weapon {

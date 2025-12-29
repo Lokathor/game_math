@@ -153,12 +153,12 @@ impl Expr {
       }
     }
   }
-  
+
   pub fn max_roll(&self) -> u8 {
     match self {
-      Self::F(x) => x,
-      Self::D3(x,y) => x*3+y,
-      Self::D6(x,y) => x*6+y,
+      Self::F(x) => *x,
+      Self::D3(x, y) => x * 3 + y,
+      Self::D6(x, y) => x * 6 + y,
     }
   }
 }
@@ -182,12 +182,13 @@ pub enum ModelRule {
   Infantry,
   Chaos,
   DeepStrike,
+  Fly,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum WeaponRule {
   Heavy,
-  Anti(ModelRule,u8),
+  Anti(ModelRule, u8),
   RapidFire(Expr),
   Blast,
   TwinLinked,
