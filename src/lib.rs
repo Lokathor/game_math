@@ -16,6 +16,7 @@ pub fn do_shooting(
     attacker.models[0].rules.contains(&ModelRule::EagleOptics);
 
   // TODO: Dark Pact
+  // TODO: Terminator Despoilers
 
   let mut shooting_weapons = vec![];
   // gather weapons that will shoot.
@@ -309,6 +310,7 @@ pub enum ModelRule {
   Chaos,
   DeepStrike,
   Fly,
+  TerminatorDespoilers,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

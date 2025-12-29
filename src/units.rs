@@ -182,6 +182,7 @@ pub fn chaos_terminators(
       ModelRule::DeepStrike,
       ModelRule::Chaos,
       ModelRule::Infantry,
+      ModelRule::TerminatorDespoilers,
     ],
   };
 

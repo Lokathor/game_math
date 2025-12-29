@@ -13,7 +13,7 @@ fn main() {
     let mut a = chaos_terminators(use_combi_weapon, use_paired_weapon);
     let mut d = chaos_terminators(use_combi_weapon, use_paired_weapon);
     let range = 9;
-    let context = Context { defender_has_cover: true, ..Default::default() };
+    let context = Context { defender_has_cover: false, ..Default::default() };
     do_shooting(&mut g, &mut a, &mut d, range, context);
     let remaining: u32 = d.models.iter().map(|m| m.health as u32).sum();
     remaining_total += remaining as f64;
