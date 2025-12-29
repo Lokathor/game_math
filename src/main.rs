@@ -3,18 +3,21 @@
 use game_math::*;
 
 fn main() {
-  let mut g = randomize::PCG32::from_getrandom().unwrap();
+  let mut g = randomize::PCG32K::<1024>::from_getrandom().unwrap();
   let _u = g.next_u32();
-  let trials = 100000;
-  let mut kills = 0.0_f64;
+  let mut remaining_total = 0.0_f64;
+  let trials = 100000_usize;
   for _ in 0..trials {
-    let mut a = gladiator_lancer_w_grenades();
-    let mut d = gladiator_lancer_w_grenades();
-    do_shooting(&mut a, &mut d, 30, 0.98, Effects::default());
-    if d.models[0].health == 0 {
-      kills += 1.0;
-    }
+    let use_combi_weapon = true;
+    let use_paired_weapon = false;
+    let mut a = chaos_terminators(use_combi_weapon, use_paired_weapon);
+    let mut d = chaos_terminators(use_combi_weapon, use_paired_weapon);
+    let range = 9;
+    let context = Context { defender_has_cover: true, ..Default::default() };
+    do_shooting(&mut g, &mut a, &mut d, range, context);
+    let remaining: u32 = d.models.iter().map(|m| m.health as u32).sum();
+    remaining_total += remaining as f64;
   }
-  let kill_rate = kills / (trials as f64) * 100.0;
-  println!("Kill Rate: {kill_rate:0.2}%");
+  let average_remaining = remaining_total / (trials as f64);
+  println!("Average Remaining: {average_remaining:0.3}");
 }
