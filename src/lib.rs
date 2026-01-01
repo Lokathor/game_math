@@ -6,17 +6,61 @@ pub use units::*;
 #[allow(unused)]
 pub fn do_shooting(
   g: &mut impl Gen32, attacker: &mut Unit, defender: &mut Unit, distance: u8,
-  ctx: Context,
+  mut ctx: Context,
 ) {
-  let mut eagle_hit_reroll =
-    attacker.models[0].rules.contains(&ModelRule::EagleOptics);
-  let mut eagle_wound_reroll =
-    attacker.models[0].rules.contains(&ModelRule::EagleOptics);
-  let mut eagle_damage_reroll =
-    attacker.models[0].rules.contains(&ModelRule::EagleOptics);
+  if attacker.models[0].rules.contains(&ModelRule::EagleOptics) {
+    // Assumption: the Eagle Optics rule is per model, so this ends up being
+    // wrong if the model is ever joined into a larger unit (which is currently
+    // impossible).
+    ctx.reroll_hit_rolls =
+      ctx.reroll_hit_rolls.max(RerollAvailabilty::Limited(1));
+    ctx.reroll_wound_rolls =
+      ctx.reroll_wound_rolls.max(RerollAvailabilty::Limited(1));
+    ctx.reroll_damage_rolls =
+      ctx.reroll_damage_rolls.max(RerollAvailabilty::Limited(1));
+  }
 
-  // TODO: Dark Pact
-  // TODO: Terminator Despoilers
+  let mut apply_dark_pact_effect = false;
+  if attacker.models.iter().any(|m| m.rules.contains(&ModelRule::DarkPacts)) {
+    // trigger a dark pact
+    let unit_leadership = i32::from(
+      attacker.models.iter().map(|m| m.leadership).min().unwrap_or_default(),
+    );
+    let mut leadership_roll = g.d6() + g.d6();
+    if leadership_roll < unit_leadership
+      && attacker.models.iter().any(|m| m.rules.contains(&ModelRule::ChaosIcon))
+    {
+      leadership_roll = g.d6() + g.d6();
+    }
+    if leadership_roll < unit_leadership {
+      let damage_roll = Expr::D3(1, 0).roll(g);
+      for _ in 0..damage_roll {
+        let target_index = 0;
+        if let Some(m) = attacker.models.get_mut(target_index) {
+          if let Some(tn) = m.fnp.or(m.fnp_dev) {
+            if g.d6() < i32::from(tn) {
+              m.health = m.health.saturating_sub(1);
+            }
+          } else {
+            m.health = m.health.saturating_sub(1);
+          }
+          if m.health == 0 {
+            attacker.models.remove(target_index);
+          }
+        } else {
+          return;
+        }
+      }
+    }
+    apply_dark_pact_effect = true;
+    if attacker
+      .models
+      .iter()
+      .any(|m| m.rules.contains(&ModelRule::TerminatorDespoilers))
+    {
+      ctx.reroll_hit_rolls = RerollAvailabilty::Unlimited;
+    }
+  }
 
   let mut shooting_weapons = vec![];
   // gather weapons that will shoot.
@@ -24,6 +68,21 @@ pub fn do_shooting(
     for gun in model.guns.iter() {
       if gun.range >= distance {
         shooting_weapons.push(gun.clone());
+        if apply_dark_pact_effect {
+          if ctx.dark_pact_for_sustained {
+            shooting_weapons
+              .last_mut()
+              .unwrap()
+              .rules
+              .push(WeaponRule::SustainedHits(Expr::_1));
+          } else {
+            shooting_weapons
+              .last_mut()
+              .unwrap()
+              .rules
+              .push(WeaponRule::LethalHits);
+          }
+        }
       }
     }
   }
@@ -72,11 +131,23 @@ pub fn do_shooting(
     for _ in 0..attacks_todo {
       let mut attack_roll = g.d6();
 
-      if eagle_hit_reroll && attack_roll < hit_tn {
-        eagle_hit_reroll = false;
-        attack_roll = g.d6();
+      // determine what hit reroll to do, if any.
+      if attack_roll < hit_tn {
+        match ctx.reroll_hit_rolls {
+          RerollAvailabilty::NoRerolls => (),
+          RerollAvailabilty::Limited(n) => {
+            if n > 0 {
+              attack_roll = g.d6();
+              ctx.reroll_hit_rolls = RerollAvailabilty::Limited(n - 1);
+            } else {
+              ctx.reroll_hit_rolls = RerollAvailabilty::NoRerolls;
+            }
+          }
+          RerollAvailabilty::Unlimited => {
+            attack_roll = g.d6();
+          }
+        }
       }
-      // TODO: other situations that can cause an attack reroll go here.
 
       if attack_roll >= crit_tn {
         hits += 1;
@@ -110,11 +181,20 @@ pub fn do_shooting(
     for _ in 0..hits {
       let mut wound_roll = g.d6();
 
-      if eagle_wound_reroll && wound_roll < wound_tn {
-        eagle_wound_reroll = false;
-        wound_roll = g.d6();
+      if wound_roll < wound_tn {
+        match ctx.reroll_wound_rolls {
+          RerollAvailabilty::NoRerolls => (),
+          RerollAvailabilty::Limited(n) => {
+            if n > 0 {
+              wound_roll = g.d6();
+              ctx.reroll_wound_rolls = RerollAvailabilty::Limited(n - 1);
+            } else {
+              ctx.reroll_wound_rolls = RerollAvailabilty::NoRerolls;
+            }
+          }
+          RerollAvailabilty::Unlimited => wound_roll = g.d6(),
+        }
       }
-      // TODO: other situations that can cause a wound reroll go here.
 
       if wound_roll >= crit_wound_tn {
         if weapon_is_devastating_wounds {
@@ -131,41 +211,60 @@ pub fn do_shooting(
      * SAVE ROLL
      */
     for _ in 0..saves {
-      let benefit_of_cover = if ctx.defender_has_cover
-        && !(defender.models[0].armor <= 3 && gun.ap == 0)
-        && !gun.rules.contains(&WeaponRule::IgnoresCover)
-      {
-        1
-      } else {
-        0
-      };
-      let armor_tn = defender.models[0].armor + gun.ap - benefit_of_cover;
-      let invuln_tn = defender.models[0].invuln.unwrap_or(7);
-      let save_tn = armor_tn.min(invuln_tn);
-      let save_roll = g.d6();
-      if save_roll < i32::from(save_tn) {
-        let mut damage_roll = gun.damage.roll(g);
-        if damage_roll <= 6 && eagle_damage_reroll {
-          eagle_damage_reroll = false;
-          damage_roll = gun.damage.roll(g);
-        }
+      let target_index = 0;
+      if let Some(def) = defender.models.get_mut(target_index) {
+        let benefit_of_cover = if ctx.defender_has_cover
+          && !(def.armor <= 3 && gun.ap == 0)
+          && !gun.rules.contains(&WeaponRule::IgnoresCover)
+        {
+          1
+        } else {
+          0
+        };
+        let armor_tn =
+          def.armor + (gun.ap + ctx.attacker_ap_bonus) - benefit_of_cover;
+        let invuln_tn = def.invuln.unwrap_or(7);
+        let save_tn = armor_tn.min(invuln_tn);
+        let save_roll = g.d6();
+        if save_roll < i32::from(save_tn) {
+          let mut damage_roll = gun.damage.roll(g);
 
-        if let Some(tn) = defender.models[0].fnp {
-          for _ in 0..damage_roll {
-            if g.d6() < i32::from(tn) {
-              defender.models[0].health =
-                defender.models[0].health.saturating_sub(1);
+          if gun.damage.reroll_favored(damage_roll) {
+            match ctx.reroll_damage_rolls {
+              RerollAvailabilty::NoRerolls => (),
+              RerollAvailabilty::Limited(n) => {
+                if n > 0 {
+                  damage_roll = gun.damage.roll(g);
+                  ctx.reroll_damage_rolls = RerollAvailabilty::Limited(n - 1);
+                } else {
+                  ctx.reroll_damage_rolls = RerollAvailabilty::NoRerolls;
+                }
+              }
+              RerollAvailabilty::Unlimited => damage_roll = gun.damage.roll(g),
             }
           }
-        } else {
-          defender.models[0].health =
-            defender.models[0].health.saturating_sub(damage_roll as u8);
-        }
 
-        if defender.models[0].health == 0 {
-          defender.models.remove(0);
+          // TODO: defender damage halfing
+          // TODO: defender damage minus
+          // TODO: melta damage plus
+
+          if let Some(tn) = def.fnp {
+            for _ in 0..damage_roll {
+              if g.d6() < i32::from(tn) {
+                def.health = def.health.saturating_sub(1);
+              }
+            }
+          } else {
+            def.health = def.health.saturating_sub(damage_roll as u8);
+          }
+
+          if def.health == 0 {
+            defender.models.remove(target_index);
+          }
         }
-      }
+      } else {
+        return;
+      };
     }
   }
 
@@ -173,20 +272,19 @@ pub fn do_shooting(
    * DEVASTATING DAMAGE
    */
   for devastating_damage in devastating {
-    if let Some(m) = defender.models.get_mut(0) {
+    let target_index = 0;
+    if let Some(m) = defender.models.get_mut(target_index) {
       if let Some(tn) = m.fnp.or(m.fnp_dev) {
         for _ in 0..devastating_damage {
           if g.d6() < i32::from(tn) {
-            defender.models[0].health =
-              defender.models[0].health.saturating_sub(1);
+            m.health = m.health.saturating_sub(1);
           }
         }
       } else {
-        defender.models[0].health =
-          defender.models[0].health.saturating_sub(devastating_damage as u8);
+        m.health = m.health.saturating_sub(devastating_damage as u8);
       }
-      if defender.models[0].health == 0 {
-        defender.models.remove(0);
+      if m.health == 0 {
+        defender.models.remove(target_index);
       }
     } else {
       return;
@@ -226,6 +324,8 @@ pub struct Model {
   pub fnp_dev: Option<u8>,
   pub health: u8,
   pub starting_health: u8,
+  pub leadership: u8,
+  pub oc: u8,
   pub guns: Vec<Weapon>,
   pub sticks: Vec<Weapon>,
   pub rules: Vec<ModelRule>,
@@ -288,6 +388,14 @@ impl Expr {
       Self::D6(x, y) => i32::from(*x) * 6 + i32::from(*y),
     }
   }
+
+  pub fn reroll_favored(&self, current: i32) -> bool {
+    match self {
+      Expr::F(_) => false,
+      Expr::D3(x, y) => (current - i32::from(*y)) <= (i32::from(*x) * 2),
+      Expr::D6(x, y) => (current - i32::from(*y)) <= (i32::from(*x) * 3),
+    }
+  }
 }
 impl Default for Expr {
   #[inline]
@@ -311,6 +419,7 @@ pub enum ModelRule {
   DeepStrike,
   Fly,
   TerminatorDespoilers,
+  ChaosIcon,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -335,6 +444,11 @@ pub struct Context {
   pub defender_below_half_strength: bool,
   pub dark_pact_for_sustained: bool,
   pub defender_has_cover: bool,
+  pub attacker_ap_bonus: u8,
+  pub reroll_number_of_attacks: RerollAvailabilty,
+  pub reroll_hit_rolls: RerollAvailabilty,
+  pub reroll_wound_rolls: RerollAvailabilty,
+  pub reroll_damage_rolls: RerollAvailabilty,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -343,4 +457,12 @@ pub enum UnitMovement {
   Normal,
   Advance,
   Stationary,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum RerollAvailabilty {
+  #[default]
+  NoRerolls,
+  Limited(u32),
+  Unlimited,
 }

@@ -11,6 +11,8 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
       armor: 3,
       health: 12,
       starting_health: 12,
+      leadership: 6,
+      oc: 3,
       guns: vec![
         Weapon {
           name: "Lancer Laser Destroyer".into(),
@@ -100,6 +102,8 @@ pub fn ballistus_dreadnought_krak() -> Unit {
       armor: 2,
       health: 12,
       starting_health: 12,
+      leadership: 6,
+      oc: 4,
       guns: vec![
         Weapon {
           name: "Ballistus Lascannon".into(),
@@ -175,6 +179,8 @@ pub fn chaos_terminators(
     fnp_dev: None,
     health: 3,
     starting_health: 3,
+    leadership: 6,
+    oc: 1,
     guns: vec![],
     sticks: vec![],
     rules: vec![
