@@ -18,7 +18,7 @@ fn main() {
         let context = Context {
           defender_has_cover: false,
           dark_pact_for_sustained,
-          attacker_ap_bonus: 0,
+          attacker_ap_bonus: 1,
           ..Default::default()
         };
         do_shooting(&mut g, &mut a, &mut d, range, context);
@@ -30,7 +30,14 @@ fn main() {
       }
       let average_remaining = (remaining_total as f64) / (trials as f64);
       println!(
-        "[use_combi:{use_combi_weapon}][dark_pact_sustain:{dark_pact_for_sustained}] Average Target Wounds Remaining: {average_remaining:0.3} (lower is better)"
+        "[{wep_type}][{dark_pact_type}] Average Target Wounds Remaining: {average_remaining:0.3} (lower is better)",
+        wep_type =
+          if use_combi_weapon { "combi-weapon" } else { "combi-bolter" },
+        dark_pact_type = if dark_pact_for_sustained {
+          "dark-pact-sustan"
+        } else {
+          "dark-pact-lethal"
+        }
       );
     }
   }

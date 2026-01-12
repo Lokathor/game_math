@@ -420,6 +420,7 @@ pub enum ModelRule {
   Fly,
   TerminatorDespoilers,
   ChaosIcon,
+  Battleline,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -433,6 +434,9 @@ pub enum WeaponRule {
   LethalHits,
   DevastatingWounds,
   IgnoresCover,
+  Pistol,
+  Torrent,
+  Psychic,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

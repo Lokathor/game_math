@@ -303,3 +303,158 @@ pub fn chaos_terminators(
 
   unit
 }
+
+pub fn rubric_marines(count: u8, use_flamers: bool) -> Unit {
+  let mut out = Unit {
+    name: "Rubric Marines".into(),
+    models: Vec::new(),
+    starting_models: count,
+  };
+
+  let aspiring_sorcerer = Model {
+    armor: 3,
+    name: "Aspiring Sorcerer".into(),
+    speed: 6,
+    toughness: 4,
+    invuln: Some(5),
+    fnp: None,
+    fnp_dev: None,
+    health: 2,
+    starting_health: 2,
+    leadership: 6,
+    oc: 2,
+    rules: vec![ModelRule::Infantry, ModelRule::Chaos, ModelRule::Battleline],
+    guns: vec![
+      Weapon {
+        name: "Warpflame Pistol".into(),
+        range: 12,
+        attacks: Expr::D6(1, 0),
+        skill: 0,
+        strength: 3,
+        ap: 1,
+        damage: Expr::_1,
+        rules: vec![
+          WeaponRule::Pistol,
+          WeaponRule::IgnoresCover,
+          WeaponRule::Torrent,
+        ],
+      },
+      Weapon {
+        name: "Malefic Curse".into(),
+        range: 24,
+        attacks: Expr::_3,
+        skill: 3,
+        strength: 4,
+        ap: 3,
+        damage: Expr::_1,
+        rules: vec![
+          WeaponRule::Anti(ModelRule::Infantry, 4),
+          WeaponRule::DevastatingWounds,
+          WeaponRule::Psychic,
+        ],
+      },
+    ],
+    sticks: vec![Weapon {
+      name: "Force Weapon".into(),
+      range: 1,
+      attacks: Expr::_3,
+      skill: 3,
+      strength: 6,
+      ap: 1,
+      damage: Expr::D3(1, 0),
+      rules: vec![WeaponRule::Psychic],
+    }],
+  };
+
+  let soulreaper = Model {
+    armor: 3,
+    name: "Rubric Marine".into(),
+    speed: 6,
+    toughness: 4,
+    invuln: Some(5),
+    fnp: None,
+    fnp_dev: None,
+    health: 2,
+    starting_health: 2,
+    leadership: 6,
+    oc: 2,
+    rules: vec![ModelRule::Infantry, ModelRule::Chaos, ModelRule::Battleline],
+    guns: vec![Weapon {
+      name: "Soulreaper Cannon".into(),
+      range: 24,
+      attacks: Expr::F(6),
+      skill: 3,
+      strength: 6,
+      ap: 2,
+      damage: Expr::_1,
+      rules: vec![WeaponRule::DevastatingWounds],
+    }],
+    sticks: vec![Weapon {
+      name: "Close Combat Weapon".into(),
+      range: 1,
+      attacks: Expr::_2,
+      skill: 3,
+      strength: 4,
+      ap: 0,
+      damage: Expr::_1,
+      rules: vec![],
+    }],
+  };
+
+  let basic_gun = if use_flamers {
+    Weapon {
+      name: "Warpflamer".into(),
+      range: 12,
+      attacks: Expr::D6(1, 0),
+      skill: 0,
+      strength: 4,
+      ap: 1,
+      damage: Expr::_1,
+      rules: vec![WeaponRule::IgnoresCover, WeaponRule::Torrent],
+    }
+  } else {
+    Weapon {
+      name: "Inferno Boltgun".into(),
+      range: 24,
+      attacks: Expr::F(2),
+      skill: 3,
+      strength: 4,
+      ap: 2,
+      damage: Expr::_1,
+      rules: vec![],
+    }
+  };
+  let basic_marine = Model {
+    armor: 3,
+    name: "Rubric Marine".into(),
+    speed: 6,
+    toughness: 4,
+    invuln: Some(5),
+    fnp: None,
+    fnp_dev: None,
+    health: 2,
+    starting_health: 2,
+    leadership: 6,
+    oc: 2,
+    rules: vec![ModelRule::Infantry, ModelRule::Chaos, ModelRule::Battleline],
+    guns: vec![basic_gun],
+    sticks: vec![Weapon {
+      name: "Close Combat Weapon".into(),
+      range: 1,
+      attacks: Expr::_2,
+      skill: 3,
+      strength: 4,
+      ap: 0,
+      damage: Expr::_1,
+      rules: vec![],
+    }],
+  };
+
+  out.models.push(aspiring_sorcerer);
+  out.models.push(soulreaper);
+  while out.models.len() < usize::from(count) {
+    out.models.push(basic_marine.clone());
+  }
+
+  out
+}
