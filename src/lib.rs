@@ -1,3 +1,5 @@
+#![feature(default_field_values)]
+
 use randomize::Gen32;
 
 pub mod units;
@@ -5,7 +7,7 @@ pub use units::*;
 
 #[allow(unused)]
 pub fn do_shooting(
-  g: &mut impl Gen32, attacker: &mut Unit, defender: &mut Unit, distance: u8,
+  g: &mut impl Gen32, attacker: &mut Unit, defender: &mut Unit,
   mut ctx: Context,
 ) {
   if attacker.models[0].rules.contains(&ModelRule::EagleOptics) {
@@ -18,6 +20,15 @@ pub fn do_shooting(
       ctx.reroll_wound_rolls.max(RerollAvailabilty::Limited(1));
     ctx.reroll_damage_rolls =
       ctx.reroll_damage_rolls.max(RerollAvailabilty::Limited(1));
+  }
+  if ctx.target_is_oath_target
+    && attacker.models[0].rules.contains(&ModelRule::OathOfMoment)
+  {
+    ctx.reroll_hit_rolls =
+      ctx.reroll_hit_rolls.max(RerollAvailabilty::Unlimited);
+    if ctx.oath_effect_wound_bonus {
+      ctx.attacker_wound_modifier += 1;
+    }
   }
 
   let mut apply_dark_pact_effect = false;
@@ -66,7 +77,7 @@ pub fn do_shooting(
   // gather weapons that will shoot.
   for model in attacker.models.iter() {
     for gun in model.guns.iter() {
-      if gun.range >= distance {
+      if gun.range >= ctx.range {
         shooting_weapons.push(gun.clone());
         if apply_dark_pact_effect {
           if ctx.dark_pact_for_sustained {
@@ -104,7 +115,7 @@ pub fn do_shooting(
       })
       .max_by_key(|xpr| xpr.max_roll());
     let mut attacks_todo = gun.attacks.roll(g);
-    if distance <= (gun.range / 2) {
+    if ctx.range <= (gun.range / 2) {
       attacks_todo += gun
         .rules
         .iter()
@@ -121,12 +132,18 @@ pub fn do_shooting(
      * ATTACK ROLL
      */
     let base_hit_tn = gun.skill as i32;
-    // TODO: stealth
-    let hit_tn_delta = 0;
-    let hit_tn = base_hit_tn + hit_tn_delta.clamp(-1, 1);
+    let mut hit_tn_delta =
+      if attacker.models[0].rules.contains(&ModelRule::Stealth) {
+        ctx.attacker_hit_modifier - 1
+      } else {
+        ctx.attacker_hit_modifier
+      }
+      .clamp(-1, 1);
+    // subtract so that a roll modifier becomes a tn modifier
+    let hit_tn = base_hit_tn - hit_tn_delta;
     let crit_tn = 6;
-    let mut hits = 0;
-    let mut saves = 0;
+    let mut required_wound_rolls = 0;
+    let mut required_save_rolls = 0;
 
     for _ in 0..attacks_todo {
       let mut attack_roll = g.d6();
@@ -150,15 +167,15 @@ pub fn do_shooting(
       }
 
       if attack_roll >= crit_tn {
-        hits += 1;
+        required_wound_rolls += 1;
         if weapon_is_lethal_hits {
-          saves += 1;
+          required_save_rolls += 1;
         }
         if let Some(sustained) = opt_sustained_hits {
-          hits += sustained.roll(g);
+          required_wound_rolls += sustained.roll(g);
         }
       } else if attack_roll >= hit_tn {
-        hits += 1;
+        required_wound_rolls += 1;
       };
     }
 
@@ -168,8 +185,9 @@ pub fn do_shooting(
     let defender_toughness =
       if let Some(m) = defender.models.get(0) { m.toughness } else { return };
     let base_wound_tn = calc_base_wound_tn(gun.strength, defender_toughness);
-    let wound_tn_delta = 0;
-    let wound_tn = base_wound_tn + wound_tn_delta.clamp(-1, 1);
+    let wound_tn_delta = ctx.attacker_wound_modifier.clamp(-1, 1);
+    // subtract so that a roll modifier becomes a tn modifier
+    let wound_tn = base_wound_tn - wound_tn_delta;
     let mut crit_wound_tn = 6;
     for weapon_rule in gun.rules.iter() {
       if let WeaponRule::Anti(model_rule, x) = weapon_rule {
@@ -178,21 +196,25 @@ pub fn do_shooting(
         }
       }
     }
-    for _ in 0..hits {
+    for _ in 0..required_wound_rolls {
       let mut wound_roll = g.d6();
 
       if wound_roll < wound_tn {
-        match ctx.reroll_wound_rolls {
-          RerollAvailabilty::NoRerolls => (),
-          RerollAvailabilty::Limited(n) => {
-            if n > 0 {
-              wound_roll = g.d6();
-              ctx.reroll_wound_rolls = RerollAvailabilty::Limited(n - 1);
-            } else {
-              ctx.reroll_wound_rolls = RerollAvailabilty::NoRerolls;
+        if gun.rules.contains(&WeaponRule::TwinLinked) {
+          wound_roll = g.d6();
+        } else {
+          match ctx.reroll_wound_rolls {
+            RerollAvailabilty::NoRerolls => (),
+            RerollAvailabilty::Limited(n) => {
+              if n > 0 {
+                wound_roll = g.d6();
+                ctx.reroll_wound_rolls = RerollAvailabilty::Limited(n - 1);
+              } else {
+                ctx.reroll_wound_rolls = RerollAvailabilty::NoRerolls;
+              }
             }
+            RerollAvailabilty::Unlimited => wound_roll = g.d6(),
           }
-          RerollAvailabilty::Unlimited => wound_roll = g.d6(),
         }
       }
 
@@ -200,17 +222,17 @@ pub fn do_shooting(
         if weapon_is_devastating_wounds {
           devastating.push(gun.damage.roll(g));
         } else {
-          saves += 1;
+          required_save_rolls += 1;
         }
       } else if wound_roll >= wound_tn {
-        saves += 1;
-      };
+        required_save_rolls += 1;
+      }
     }
 
     /*
      * SAVE ROLL
      */
-    for _ in 0..saves {
+    for _ in 0..required_save_rolls {
       let target_index = 0;
       if let Some(def) = defender.models.get_mut(target_index) {
         let benefit_of_cover = if ctx.defender_has_cover
@@ -421,6 +443,11 @@ pub enum ModelRule {
   TerminatorDespoilers,
   ChaosIcon,
   Battleline,
+  MeteoricDescent,
+  OathOfMoment,
+  JumpPack,
+  Gravis,
+  Stealth,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -437,22 +464,28 @@ pub enum WeaponRule {
   Pistol,
   Torrent,
   Psychic,
+  Assault,
+  Hazardous,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Context {
-  pub oath: bool,
+  pub range: u8,
   pub storm_of_fire: bool,
   pub devastator_doctrine: bool,
   pub attacker_movement: UnitMovement,
   pub defender_below_half_strength: bool,
   pub dark_pact_for_sustained: bool,
   pub defender_has_cover: bool,
+  pub attacker_hit_modifier: i32,
+  pub attacker_wound_modifier: i32,
   pub attacker_ap_bonus: u8,
   pub reroll_number_of_attacks: RerollAvailabilty,
   pub reroll_hit_rolls: RerollAvailabilty,
   pub reroll_wound_rolls: RerollAvailabilty,
   pub reroll_damage_rolls: RerollAvailabilty,
+  pub target_is_oath_target: bool,
+  pub oath_effect_wound_bonus: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

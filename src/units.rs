@@ -85,6 +85,7 @@ pub fn gladiator_lancer_w_grenades() -> Unit {
         ModelRule::Smoke,
         ModelRule::Imperium,
         ModelRule::EagleOptics,
+        ModelRule::OathOfMoment,
       ],
       ..Default::default()
     }],
@@ -152,6 +153,7 @@ pub fn ballistus_dreadnought_krak() -> Unit {
         ModelRule::Imperium,
         ModelRule::Dreadnought,
         ModelRule::BallistusStrike,
+        ModelRule::OathOfMoment,
       ],
       ..Default::default()
     }],
@@ -454,6 +456,122 @@ pub fn rubric_marines(count: u8, use_flamers: bool) -> Unit {
   out.models.push(soulreaper);
   while out.models.len() < usize::from(count) {
     out.models.push(basic_marine.clone());
+  }
+
+  out
+}
+
+pub fn inceptor_bolter(count: u8) -> Unit {
+  let mut out =
+    Unit { name: "Inceptors".into(), starting_models: count, models: vec![] };
+
+  let model = Model {
+    name: "Inceptor".into(),
+    speed: 10,
+    toughness: 6,
+    armor: 3,
+    health: 3,
+    starting_health: 4,
+    leadership: 6,
+    oc: 1,
+    guns: vec![Weapon {
+      name: "Assault Bolter".into(),
+      range: 18,
+      attacks: Expr::_3,
+      skill: 3,
+      strength: 5,
+      ap: 1,
+      damage: Expr::D6(2, 0),
+      rules: vec![
+        WeaponRule::Assault,
+        WeaponRule::Pistol,
+        WeaponRule::SustainedHits(Expr::_2),
+        WeaponRule::TwinLinked,
+      ],
+    }],
+    sticks: vec![Weapon {
+      name: "Close Combat Weapon".into(),
+      range: 1,
+      attacks: Expr::_3,
+      skill: 3,
+      strength: 4,
+      ap: 0,
+      damage: Expr::_1,
+      rules: vec![],
+    }],
+    rules: vec![
+      ModelRule::MeteoricDescent,
+      ModelRule::DeepStrike,
+      ModelRule::OathOfMoment,
+      ModelRule::Infantry,
+      ModelRule::Fly,
+      ModelRule::Imperium,
+      ModelRule::Gravis,
+    ],
+    ..Default::default()
+  };
+
+  while out.models.len() < usize::from(out.starting_models) {
+    out.models.push(model.clone());
+  }
+
+  out
+}
+
+pub fn inceptor_plasma(count: u8, overcharge: bool) -> Unit {
+  let mut out =
+    Unit { name: "Inceptors".into(), starting_models: count, models: vec![] };
+
+  let mut model = Model {
+    name: "Inceptor".into(),
+    speed: 10,
+    toughness: 6,
+    armor: 3,
+    health: 3,
+    starting_health: 4,
+    leadership: 6,
+    oc: 1,
+    guns: vec![Weapon {
+      name: "Plasma Exterminator".into(),
+      range: 18,
+      attacks: Expr::_2,
+      skill: 3,
+      strength: if overcharge { 8 } else { 7 },
+      ap: if overcharge { 3 } else { 2 },
+      damage: Expr::D6(if overcharge { 3 } else { 2 }, 0),
+      rules: vec![
+        WeaponRule::Assault,
+        WeaponRule::Pistol,
+        WeaponRule::TwinLinked,
+      ],
+    }],
+    sticks: vec![Weapon {
+      name: "Close Combat Weapon".into(),
+      range: 1,
+      attacks: Expr::_3,
+      skill: 3,
+      strength: 4,
+      ap: 0,
+      damage: Expr::_1,
+      rules: vec![],
+    }],
+    rules: vec![
+      ModelRule::MeteoricDescent,
+      ModelRule::DeepStrike,
+      ModelRule::OathOfMoment,
+      ModelRule::Infantry,
+      ModelRule::Fly,
+      ModelRule::Imperium,
+      ModelRule::Gravis,
+    ],
+    ..Default::default()
+  };
+  if overcharge {
+    model.guns[0].rules.push(WeaponRule::Hazardous);
+  }
+
+  while out.models.len() < usize::from(out.starting_models) {
+    out.models.push(model.clone());
   }
 
   out
