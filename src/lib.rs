@@ -1,5 +1,3 @@
-#![feature(default_field_values)]
-
 use randomize::Gen32;
 
 pub mod units;
