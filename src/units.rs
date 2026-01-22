@@ -628,6 +628,13 @@ pub fn company_heroes() -> Unit {
       bolt_pistol.clone(),
     ],
     sticks: vec![clone_combat.clone()],
+    rules: vec![
+      ModelRule::Ancient,
+      ModelRule::Infantry,
+      ModelRule::Grenades,
+      ModelRule::Imperium,
+      ModelRule::Tacticus,
+    ],
     ..Default::default()
   };
 
@@ -651,6 +658,12 @@ pub fn company_heroes() -> Unit {
       damage: Expr::_2,
       rules: vec![WeaponRule::Precision],
     }],
+    rules: vec![
+      ModelRule::Infantry,
+      ModelRule::Grenades,
+      ModelRule::Imperium,
+      ModelRule::Tacticus,
+    ],
     ..Default::default()
   };
 
@@ -680,6 +693,12 @@ pub fn company_heroes() -> Unit {
       bolt_pistol.clone(),
     ],
     sticks: vec![clone_combat.clone()],
+    rules: vec![
+      ModelRule::Infantry,
+      ModelRule::Grenades,
+      ModelRule::Imperium,
+      ModelRule::Tacticus,
+    ],
     ..Default::default()
   };
 
@@ -706,6 +725,12 @@ pub fn company_heroes() -> Unit {
       bolt_pistol.clone(),
     ],
     sticks: vec![clone_combat.clone()],
+    rules: vec![
+      ModelRule::Infantry,
+      ModelRule::Grenades,
+      ModelRule::Imperium,
+      ModelRule::Tacticus,
+    ],
     ..Default::default()
   };
 
@@ -713,5 +738,79 @@ pub fn company_heroes() -> Unit {
     name: "Company Heroes".into(),
     models: vec![ancient, company_champion, rifle_vet, heavy_vet],
     starting_models: 4,
+  }
+}
+
+pub fn marneus_calgar() -> Unit {
+  let guard = Model {
+    name: "Victrix Honor Guard".into(),
+    speed: 6,
+    toughness: 4,
+    armor: 2,
+    invuln: Some(4),
+    health: 3,
+    starting_health: 3,
+    leadership: 6,
+    oc: 1,
+    guns: Vec::new(),
+    sticks: vec![Weapon {
+      name: "Victrix Power Sword".into(),
+      range: 1,
+      attacks: Expr::_5,
+      skill: 2,
+      strength: 5,
+      ap: 2,
+      damage: Expr::_2,
+      rules: Vec::new(),
+    }],
+    rules: vec![ModelRule::Imperium, ModelRule::Infantry],
+    ..Default::default()
+  };
+
+  let cally = Model {
+    name: "Marneus Calgar".into(),
+    speed: 6,
+    toughness: 6,
+    armor: 2,
+    invuln: Some(4),
+    health: 6,
+    starting_health: 6,
+    leadership: 6,
+    oc: 1,
+    guns: vec![Weapon {
+      name: "Gauntlets of Ultramar".into(),
+      range: 18,
+      attacks: Expr::_4,
+      skill: 2,
+      strength: 4,
+      ap: 2,
+      damage: Expr::_2,
+      rules: vec![WeaponRule::Pistol, WeaponRule::TwinLinked],
+    }],
+    sticks: vec![Weapon {
+      name: "Gauntlets of Ultramar".into(),
+      range: 1,
+      attacks: Expr::_6,
+      skill: 2,
+      strength: 8,
+      ap: 3,
+      damage: Expr::_3,
+      rules: vec![WeaponRule::TwinLinked],
+    }],
+    rules: vec![
+      ModelRule::Infantry,
+      ModelRule::Imperium,
+      ModelRule::Character,
+      ModelRule::EpicHero,
+      ModelRule::Gravis,
+      ModelRule::ChapterMaster,
+    ],
+    ..Default::default()
+  };
+
+  Unit {
+    name: "Marneus Calgar".into(),
+    models: vec![cally, guard.clone(), guard],
+    starting_models: 3,
   }
 }

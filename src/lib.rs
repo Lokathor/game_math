@@ -74,24 +74,47 @@ pub fn do_shooting(
   let mut shooting_weapons = vec![];
   // gather weapons that will shoot.
   for model in attacker.models.iter() {
-    for gun in model.guns.iter() {
+    // per model, select from pistols or non-pistols. except that vehciles and
+    // monsters can skip this step.
+    let potential_guns: Vec<&Weapon> =
+      if model.rules.contains(&ModelRule::Vehicle)
+        || model.rules.contains(&ModelRule::Monster)
+      {
+        model.guns.iter().collect()
+      } else {
+        // the logic here is that if we have any non-pistols we will assume that
+        // they are the superior weapon and shoot them. Otherwise we just shoot
+        // whatever pistols we have.
+        let non_pistols: Vec<_> = model
+          .guns
+          .iter()
+          .filter(|g| !g.rules.contains(&WeaponRule::Pistol))
+          .collect();
+        if non_pistols.len() > 0 {
+          non_pistols
+        } else {
+          model
+            .guns
+            .iter()
+            .filter(|g| g.rules.contains(&WeaponRule::Pistol))
+            .collect()
+        }
+      };
+
+    // todo: handle limits from firing in melee properly.
+    // todo: handle Big Guns Never Tire
+
+    for gun in potential_guns {
       if gun.range >= ctx.range {
-        shooting_weapons.push(gun.clone());
+        let mut x = gun.clone();
         if apply_dark_pact_effect {
           if ctx.dark_pact_for_sustained {
-            shooting_weapons
-              .last_mut()
-              .unwrap()
-              .rules
-              .push(WeaponRule::SustainedHits(Expr::_1));
+            x.rules.push(WeaponRule::SustainedHits(Expr::_1));
           } else {
-            shooting_weapons
-              .last_mut()
-              .unwrap()
-              .rules
-              .push(WeaponRule::LethalHits);
+            x.rules.push(WeaponRule::LethalHits);
           }
         }
+        shooting_weapons.push(x);
       }
     }
   }
@@ -429,6 +452,7 @@ impl Default for Expr {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ModelRule {
   Vehicle,
+  Monster,
   Smoke,
   Imperium,
   EagleOptics,
@@ -448,7 +472,13 @@ pub enum ModelRule {
   JumpPack,
   Gravis,
   Stealth,
-  BringerOfChange, // TODO
+  BringerOfChange, // TODO,
+  Character,
+  ChapterMaster,
+  EpicHero,
+  Grenades,
+  Tacticus,
+  Ancient,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
