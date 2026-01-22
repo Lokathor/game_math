@@ -227,6 +227,8 @@ pub fn do_shooting(
       }
     }
 
+    let effective_ap = (i32::from(gun.ap) + ctx.attacker_ap_modifier).max(0);
+
     /*
      * SAVE ROLL
      */
@@ -234,17 +236,16 @@ pub fn do_shooting(
       let target_index = 0;
       if let Some(def) = defender.models.get_mut(target_index) {
         let benefit_of_cover = if ctx.defender_has_cover
-          && !(def.armor <= 3 && gun.ap == 0)
+          && !(def.armor <= 3 && effective_ap == 0)
           && !gun.rules.contains(&WeaponRule::IgnoresCover)
         {
           1
         } else {
           0
         };
-        let armor_tn =
-          def.armor + (gun.ap + ctx.attacker_ap_bonus) - benefit_of_cover;
+        let armor_tn = i32::from(def.armor) + effective_ap - benefit_of_cover;
         let invuln_tn = def.invuln.unwrap_or(7);
-        let save_tn = armor_tn.min(invuln_tn);
+        let save_tn = armor_tn.min(i32::from(invuln_tn));
         let save_roll = g.d6();
         if save_roll < i32::from(save_tn) {
           let mut damage_roll = gun.damage.roll(g);
@@ -265,7 +266,7 @@ pub fn do_shooting(
           }
 
           // TODO: defender damage halfing
-          // TODO: defender damage minus
+          // TODO: defender damage minus 1
           // TODO: melta damage plus
 
           if let Some(tn) = def.fnp {
@@ -446,6 +447,7 @@ pub enum ModelRule {
   JumpPack,
   Gravis,
   Stealth,
+  BringerOfChange, // TODO
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -477,13 +479,17 @@ pub struct Context {
   pub defender_has_cover: bool,
   pub attacker_hit_modifier: i32,
   pub attacker_wound_modifier: i32,
-  pub attacker_ap_bonus: u8,
+  pub attacker_ap_modifier: i32,
   pub reroll_number_of_attacks: RerollAvailabilty,
   pub reroll_hit_rolls: RerollAvailabilty,
   pub reroll_wound_rolls: RerollAvailabilty,
   pub reroll_damage_rolls: RerollAvailabilty,
   pub target_is_oath_target: bool,
   pub oath_effect_wound_bonus: bool,
+  pub attacker_on_objective: bool,
+  pub defender_on_objective: bool,
+  pub attacker_controls_objective: bool,
+  pub defender_controls_objective: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

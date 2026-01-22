@@ -48,7 +48,7 @@ fn chaos_terminator_shooting() {
           range: 9,
           defender_has_cover: false,
           dark_pact_for_sustained,
-          attacker_ap_bonus: 1,
+          attacker_ap_modifier: 1,
           ..Default::default()
         };
         do_shooting(&mut g, &mut a, &mut d, context);

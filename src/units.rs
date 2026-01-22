@@ -306,7 +306,7 @@ pub fn chaos_terminators(
   unit
 }
 
-pub fn rubric_marines(count: u8, use_flamers: bool) -> Unit {
+pub fn rubric_marines(count: u8, use_flamers: bool, icon: bool) -> Unit {
   let mut out = Unit {
     name: "Rubric Marines".into(),
     models: Vec::new(),
@@ -456,6 +456,12 @@ pub fn rubric_marines(count: u8, use_flamers: bool) -> Unit {
   out.models.push(soulreaper);
   while out.models.len() < usize::from(count) {
     out.models.push(basic_marine.clone());
+  }
+
+  if icon {
+    out.models.iter_mut().for_each(|m| {
+      m.guns.iter_mut().for_each(|g| g.rules.push(WeaponRule::IgnoresCover))
+    });
   }
 
   out
