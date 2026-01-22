@@ -544,7 +544,7 @@ pub fn inceptor_plasma(count: u8, overcharge: bool) -> Unit {
       skill: 3,
       strength: if overcharge { 8 } else { 7 },
       ap: if overcharge { 3 } else { 2 },
-      damage: Expr::D6(if overcharge { 3 } else { 2 }, 0),
+      damage: if overcharge { Expr::_3 } else { Expr::_2 },
       rules: vec![
         WeaponRule::Assault,
         WeaponRule::Pistol,
