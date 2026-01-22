@@ -381,6 +381,7 @@ impl Expr {
   pub const _3: Self = Self::F(3);
   pub const _4: Self = Self::F(4);
   pub const _5: Self = Self::F(5);
+  pub const _6: Self = Self::F(6);
 
   pub fn roll(&self, g: &mut impl Gen32) -> i32 {
     match self {
@@ -466,6 +467,7 @@ pub enum WeaponRule {
   Psychic,
   Assault,
   Hazardous,
+  Precision,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

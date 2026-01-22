@@ -582,3 +582,136 @@ pub fn inceptor_plasma(count: u8, overcharge: bool) -> Unit {
 
   out
 }
+
+pub fn company_heroes() -> Unit {
+  let bolt_pistol = Weapon {
+    name: "Bolt Pistol".into(),
+    range: 12,
+    attacks: Expr::_1,
+    skill: 3,
+    strength: 4,
+    ap: 0,
+    damage: Expr::_1,
+    rules: vec![WeaponRule::Pistol],
+  };
+  let clone_combat = Weapon {
+    name: "Close Combat Weapon".into(),
+    range: 1,
+    attacks: Expr::_5,
+    skill: 3,
+    strength: 4,
+    ap: 0,
+    damage: Expr::_1,
+    rules: vec![],
+  };
+
+  let ancient = Model {
+    name: "Ancient".into(),
+    speed: 6,
+    toughness: 4,
+    armor: 3,
+    health: 4,
+    starting_health: 4,
+    leadership: 6,
+    oc: 1,
+    guns: vec![
+      Weapon {
+        name: "Bolt Rifle".into(),
+        range: 24,
+        attacks: Expr::_2,
+        skill: 3,
+        strength: 4,
+        ap: 1,
+        damage: Expr::_1,
+        rules: vec![],
+      },
+      bolt_pistol.clone(),
+    ],
+    sticks: vec![clone_combat.clone()],
+    ..Default::default()
+  };
+
+  let company_champion = Model {
+    name: "Company Champion".into(),
+    speed: 6,
+    toughness: 4,
+    armor: 3,
+    health: 4,
+    starting_health: 4,
+    leadership: 6,
+    oc: 1,
+    guns: vec![bolt_pistol.clone()],
+    sticks: vec![Weapon {
+      name: "Master-crafted power weapon".into(),
+      range: 1,
+      attacks: Expr::_6,
+      skill: 2,
+      strength: 5,
+      ap: 2,
+      damage: Expr::_2,
+      rules: vec![WeaponRule::Precision],
+    }],
+    ..Default::default()
+  };
+
+  let rifle_vet = Model {
+    name: "Company Vetern".into(),
+    speed: 6,
+    toughness: 4,
+    armor: 3,
+    health: 4,
+    starting_health: 4,
+    leadership: 6,
+    oc: 1,
+    guns: vec![
+      Weapon {
+        name: "Master-crafted Bolt Rifle".into(),
+        range: 24,
+        attacks: Expr::_2,
+        skill: 2,
+        strength: 4,
+        ap: 1,
+        damage: Expr::_2,
+        rules: vec![
+          WeaponRule::DevastatingWounds,
+          WeaponRule::RapidFire(Expr::_1),
+        ],
+      },
+      bolt_pistol.clone(),
+    ],
+    sticks: vec![clone_combat.clone()],
+    ..Default::default()
+  };
+
+  let heavy_vet = Model {
+    name: "Company Vetern".into(),
+    speed: 6,
+    toughness: 4,
+    armor: 3,
+    health: 4,
+    starting_health: 4,
+    leadership: 6,
+    oc: 1,
+    guns: vec![
+      Weapon {
+        name: "Master-crafted Heavy Bolter".into(),
+        range: 36,
+        attacks: Expr::_3,
+        skill: 3,
+        strength: 5,
+        ap: 1,
+        damage: Expr::_3,
+        rules: vec![WeaponRule::Heavy, WeaponRule::SustainedHits(Expr::_2)],
+      },
+      bolt_pistol.clone(),
+    ],
+    sticks: vec![clone_combat.clone()],
+    ..Default::default()
+  };
+
+  Unit {
+    name: "Company Heroes".into(),
+    models: vec![ancient, company_champion, rifle_vet, heavy_vet],
+    starting_models: 4,
+  }
+}
