@@ -16,6 +16,8 @@ fn main() {
         let context = Context {
           range: 9,
           target_is_oath_target,
+          storm_of_fire: true,
+          devastator_doctrine: true,
           oath_effect_wound_bonus: true,
           defender_has_cover: false,
           ..Default::default()

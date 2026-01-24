@@ -124,6 +124,12 @@ pub fn do_combat(
         if apply_lt_lethal_hits {
           x.rules.push(WeaponRule::LethalHits);
         }
+        if ctx.storm_of_fire {
+          x.rules.push(WeaponRule::IgnoresCover);
+          if ctx.devastator_doctrine {
+            x.ap += 1;
+          }
+        }
         shooting_weapons.push(x);
       }
     }
