@@ -1,3 +1,5 @@
+use std::vec;
+
 use super::*;
 
 pub fn gladiator_lancer_w_grenades() -> Unit {
@@ -634,6 +636,8 @@ pub fn company_heroes() -> Unit {
       ModelRule::Grenades,
       ModelRule::Imperium,
       ModelRule::Tacticus,
+      ModelRule::CommandSquad,
+      ModelRule::OathOfMoment,
     ],
     ..Default::default()
   };
@@ -663,6 +667,8 @@ pub fn company_heroes() -> Unit {
       ModelRule::Grenades,
       ModelRule::Imperium,
       ModelRule::Tacticus,
+      ModelRule::CommandSquad,
+      ModelRule::OathOfMoment,
     ],
     ..Default::default()
   };
@@ -698,6 +704,8 @@ pub fn company_heroes() -> Unit {
       ModelRule::Grenades,
       ModelRule::Imperium,
       ModelRule::Tacticus,
+      ModelRule::CommandSquad,
+      ModelRule::OathOfMoment,
     ],
     ..Default::default()
   };
@@ -730,6 +738,8 @@ pub fn company_heroes() -> Unit {
       ModelRule::Grenades,
       ModelRule::Imperium,
       ModelRule::Tacticus,
+      ModelRule::CommandSquad,
+      ModelRule::OathOfMoment,
     ],
     ..Default::default()
   };
@@ -741,7 +751,7 @@ pub fn company_heroes() -> Unit {
   }
 }
 
-pub fn marneus_calgar() -> Unit {
+pub fn marneus_calgar(bodyguard: Option<Unit>) -> Unit {
   let guard = Model {
     name: "Victrix Honor Guard".into(),
     speed: 6,
@@ -804,13 +814,92 @@ pub fn marneus_calgar() -> Unit {
       ModelRule::EpicHero,
       ModelRule::Gravis,
       ModelRule::ChapterMaster,
+      ModelRule::OathOfMoment,
     ],
     ..Default::default()
   };
 
-  Unit {
-    name: "Marneus Calgar".into(),
-    models: vec![cally, guard.clone(), guard],
-    starting_models: 3,
+  if let Some(mut guard_unit) = bodyguard {
+    guard_unit.models.push(cally);
+    guard_unit.models.push(guard.clone());
+    guard_unit.models.push(guard);
+    Unit {
+      name: format!("Marneus Calgar Leading {}", &guard_unit.name),
+      models: guard_unit.models,
+      starting_models: guard_unit.starting_models + 3,
+    }
+  } else {
+    Unit {
+      name: "Marneus Calgar".into(),
+      models: vec![cally, guard.clone(), guard],
+      starting_models: 3,
+    }
+  }
+}
+
+pub fn lieutenant(bodyguard: Option<Unit>) -> Unit {
+  let lt = Model {
+    name: "Lieutenant".into(),
+    speed: 6,
+    toughness: 4,
+    armor: 3,
+    health: 4,
+    starting_health: 4,
+    leadership: 6,
+    oc: 1,
+    guns: vec![
+      Weapon {
+        name: "Heavy Bolt Pistol".into(),
+        range: 18,
+        attacks: Expr::_1,
+        skill: 2,
+        strength: 4,
+        ap: 1,
+        damage: Expr::_1,
+        rules: vec![WeaponRule::Pistol],
+      },
+      Weapon {
+        name: "Plasma Pistol (Standard)".into(),
+        range: 12,
+        attacks: Expr::_1,
+        skill: 2,
+        strength: 7,
+        ap: 2,
+        damage: Expr::_1,
+        rules: vec![WeaponRule::Pistol],
+      },
+    ],
+    sticks: vec![Weapon {
+      name: "Power Fist".into(),
+      range: 1,
+      attacks: Expr::_4,
+      skill: 2,
+      strength: 8,
+      ap: 2,
+      damage: Expr::_2,
+      rules: vec![],
+    }],
+    rules: vec![
+      ModelRule::Infantry,
+      ModelRule::Character,
+      ModelRule::Grenades,
+      ModelRule::Imperium,
+      ModelRule::Tacticus,
+      ModelRule::Lieutenant,
+      ModelRule::TacticalPrecision,
+      ModelRule::OathOfMoment,
+    ],
+    ..Default::default()
+  };
+
+  if let Some(mut guard_unit) = bodyguard {
+    guard_unit.models.push(lt);
+    Unit {
+      name: format!("Lieutenant Leading {}", &guard_unit.name),
+      models: guard_unit.models,
+      starting_models: guard_unit.starting_models + 1,
+    }
+  } else {
+    Unit { name: "Lieutenant".into(), models: vec![lt], starting_models: 1 }
   }
 }

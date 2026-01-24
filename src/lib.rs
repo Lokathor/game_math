@@ -4,7 +4,7 @@ pub mod units;
 pub use units::*;
 
 #[allow(unused)]
-pub fn do_shooting(
+pub fn do_combat(
   g: &mut impl Gen32, attacker: &mut Unit, defender: &mut Unit,
   mut ctx: Context,
 ) {
@@ -71,6 +71,13 @@ pub fn do_shooting(
     }
   }
 
+  let mut apply_lt_lethal_hits = false;
+  if attacker.any_rule(ModelRule::TacticalPrecision) {
+    if attacker.models.len() > 1 {
+      apply_lt_lethal_hits = true;
+    }
+  }
+
   let mut shooting_weapons = vec![];
   // gather weapons that will shoot.
   for model in attacker.models.iter() {
@@ -113,6 +120,9 @@ pub fn do_shooting(
           } else {
             x.rules.push(WeaponRule::LethalHits);
           }
+        }
+        if apply_lt_lethal_hits {
+          x.rules.push(WeaponRule::LethalHits);
         }
         shooting_weapons.push(x);
       }
@@ -206,7 +216,13 @@ pub fn do_shooting(
     let defender_toughness =
       if let Some(m) = defender.models.get(0) { m.toughness } else { return };
     let base_wound_tn = calc_base_wound_tn(gun.strength, defender_toughness);
-    let wound_tn_delta = ctx.attacker_wound_modifier.clamp(-1, 1);
+    let mut wound_tn_delta = ctx.attacker_wound_modifier;
+    if defender.any_rule(ModelRule::CommandSquad)
+      && defender.any_rule(ModelRule::Character)
+    {
+      wound_tn_delta -= 1;
+    }
+    wound_tn_delta = wound_tn_delta.clamp(-1, 1);
     // subtract so that a roll modifier becomes a tn modifier
     let wound_tn = base_wound_tn - wound_tn_delta;
     let mut crit_wound_tn = 6;
@@ -356,6 +372,12 @@ pub struct Unit {
   pub models: Vec<Model>,
   pub starting_models: u8,
 }
+impl Unit {
+  #[inline]
+  pub fn any_rule(&self, rule: ModelRule) -> bool {
+    self.models.iter().any(|m| m.rules.iter().any(|r| *r == rule))
+  }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Model {
@@ -479,6 +501,9 @@ pub enum ModelRule {
   Grenades,
   Tacticus,
   Ancient,
+  CommandSquad,
+  TacticalPrecision,
+  Lieutenant,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -503,6 +528,9 @@ pub enum WeaponRule {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Context {
   pub range: u8,
+  /// when range == 1 but this isn't set then we're firing while enganged with
+  /// the enemy.
+  pub is_melee: bool,
   pub storm_of_fire: bool,
   pub devastator_doctrine: bool,
   pub attacker_movement: UnitMovement,

@@ -4,13 +4,15 @@ use game_math::*;
 
 fn main() {
   let mut g = randomize::PCG32K::<1024>::from_getrandom().unwrap();
-  for overcharge in [false, true] {
+  for with_lt in [false, true] {
     for target_is_oath_target in [false, true] {
       let trials = 10000;
       let mut remaining_total = 0_u64;
       for _ in 0..trials {
-        let mut a = company_heroes();
-        let mut d = chaos_terminators(false, false);
+        let heroes = company_heroes();
+        let lt = lieutenant(Some(company_heroes()));
+        let mut a = marneus_calgar(Some(if with_lt { lt } else { heroes }));
+        let mut d = gladiator_lancer_w_grenades();
         let context = Context {
           range: 9,
           target_is_oath_target,
@@ -18,15 +20,15 @@ fn main() {
           defender_has_cover: false,
           ..Default::default()
         };
-        do_shooting(&mut g, &mut a, &mut d, context);
+        do_combat(&mut g, &mut a, &mut d, context);
         let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
         remaining_total += remaining;
       }
       let average_remaining = (remaining_total as f64) / (trials as f64);
-      let chrg = if overcharge { "OvrChrg" } else { "NrmShot" };
+      let lt_txt = if with_lt { "w/LT" } else { "NoLT" };
       let oath = if target_is_oath_target { "Oath" } else { "NoRR" };
       println!(
-        "[{chrg}][{oath}] Average Wounds Remaining: {average_remaining:0.3} (lower is better)"
+        "[{lt_txt}][{oath}] Average Wounds Remaining: {average_remaining:0.3} (lower is better)"
       );
     }
   }
@@ -51,7 +53,7 @@ fn chaos_terminator_shooting() {
           attacker_ap_modifier: 1,
           ..Default::default()
         };
-        do_shooting(&mut g, &mut a, &mut d, context);
+        do_combat(&mut g, &mut a, &mut d, context);
         let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
         remaining_total += remaining;
       }
