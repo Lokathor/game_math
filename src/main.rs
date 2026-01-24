@@ -9,7 +9,7 @@ fn main() {
       let trials = 10000;
       let mut remaining_total = 0_u64;
       for _ in 0..trials {
-        let mut a = inceptor_plasma(6, overcharge);
+        let mut a = company_heroes();
         let mut d = chaos_terminators(false, false);
         let context = Context {
           range: 9,
