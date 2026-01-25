@@ -4,34 +4,37 @@ use game_math::*;
 
 fn main() {
   let mut g = randomize::PCG32K::<1024>::from_getrandom().unwrap();
-  for with_lt in [false, true] {
-    for target_is_oath_target in [false, true] {
-      let trials = 10000;
-      let mut remaining_total = 0_u64;
-      for _ in 0..trials {
-        let heroes = company_heroes();
-        let lt = lieutenant(Some(company_heroes()));
-        let mut a = marneus_calgar(Some(if with_lt { lt } else { heroes }));
-        let mut d = gladiator_lancer_w_grenades();
-        let context = Context {
-          range: 9,
-          target_is_oath_target,
-          storm_of_fire: true,
-          devastator_doctrine: true,
-          oath_effect_wound_bonus: true,
-          defender_has_cover: false,
-          ..Default::default()
-        };
-        do_combat(&mut g, &mut a, &mut d, context);
-        let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
-        remaining_total += remaining;
+  for target_is_oath_target in [false, true] {
+    for with_lt in [false, true] {
+      for storm_of_fire in [false, true] {
+        let trials = 100000;
+        let mut remaining_total = 0_u64;
+        for _ in 0..trials {
+          let heroes = company_heroes();
+          let lt = lieutenant(Some(company_heroes()));
+          let mut a = marneus_calgar(Some(if with_lt { lt } else { heroes }));
+          let mut d = gladiator_lancer_w_grenades();
+          let context = Context {
+            range: 9,
+            target_is_oath_target,
+            storm_of_fire,
+            devastator_doctrine: true,
+            oath_effect_wound_bonus: true,
+            defender_has_cover: false,
+            ..Default::default()
+          };
+          do_combat(&mut g, &mut a, &mut d, context);
+          let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
+          remaining_total += remaining;
+        }
+        let average_remaining = (remaining_total as f64) / (trials as f64);
+        let lt_txt = if with_lt { "w/LT" } else { "NoLT" };
+        let oath = if target_is_oath_target { "Oath" } else { "NoRR" };
+        let storm = if storm_of_fire { "Storm" } else { "NoStm" };
+        println!(
+          "[{oath}][{lt_txt}][{storm}] Avg Wnds Remaining: {average_remaining:0.3} (lower is better)"
+        );
       }
-      let average_remaining = (remaining_total as f64) / (trials as f64);
-      let lt_txt = if with_lt { "w/LT" } else { "NoLT" };
-      let oath = if target_is_oath_target { "Oath" } else { "NoRR" };
-      println!(
-        "[{lt_txt}][{oath}] Average Wounds Remaining: {average_remaining:0.3} (lower is better)"
-      );
     }
   }
 }

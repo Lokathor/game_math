@@ -8,3 +8,6 @@ license = "Zlib OR MIT OR Apache-2.0"
 bytemuck = { version = "1.23.2", features = ["derive"] }
 contiguous_bitset = "0.1.1"
 randomize = { version = "5.1.0", features = ["getrandom"] }
+
+[profile.dev]
+opt-level = 3
