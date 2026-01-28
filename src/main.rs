@@ -11,16 +11,20 @@ fn main() {
       for _ in 0..trials {
         let mut a = assault_intercessors(5);
         let mut d = a.clone();
+        // shoot
         let context = Context {
-          range: 1,
+          range: 2,
           defender_on_objective: true,
-          is_melee: true,
+          is_melee: false,
           target_is_oath_target,
           oath_effect_wound_bonus: true,
           attacker_wound_modifier: strat,
           attacker_ap_modifier: strat,
           ..Default::default()
         };
+        do_combat(&mut g, &mut a, &mut d, context);
+        // melee
+        let context = Context { range: 1, is_melee: true, ..context };
         do_combat(&mut g, &mut a, &mut d, context);
         let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
         remaining_total += remaining;
