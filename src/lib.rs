@@ -23,7 +23,16 @@ pub fn do_combat(
       ctx.attacker_wound_modifier += 1;
     }
   }
-  if attacker.any_rule(ModelRule::ShockAssault) {
+  if ctx.is_melee && attacker.any_rule(ModelRule::ShockAssault) {
+    if ctx.defender_on_objective {
+      ctx.reroll_wound_rolls =
+        ctx.reroll_wound_rolls.max(RerollAvailabilty::Unlimited);
+    } else {
+      ctx.reroll_wound_rolls =
+        ctx.reroll_wound_rolls.max(RerollAvailabilty::RerollOnes);
+    }
+  }
+  if !ctx.is_melee && attacker.any_rule(ModelRule::BringerOfChange) {
     if ctx.defender_on_objective {
       ctx.reroll_wound_rolls =
         ctx.reroll_wound_rolls.max(RerollAvailabilty::Unlimited);
@@ -535,7 +544,7 @@ pub enum ModelRule {
   JumpPack,
   Gravis,
   Stealth,
-  BringerOfChange, // TODO,
+  BringerOfChange,
   Character,
   ChapterMaster,
   EpicHero,
