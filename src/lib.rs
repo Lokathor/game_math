@@ -8,10 +8,7 @@ pub fn do_combat(
   g: &mut impl Gen32, attacker: &mut Unit, defender: &mut Unit,
   mut ctx: Context,
 ) {
-  if attacker.models[0].rules.contains(&ModelRule::EagleOptics) {
-    // Assumption: the Eagle Optics rule is per model, so this ends up being
-    // wrong if the model is ever joined into a larger unit (which is currently
-    // impossible).
+  if attacker.any_rule(ModelRule::EagleOptics) {
     ctx.reroll_hit_rolls =
       ctx.reroll_hit_rolls.max(RerollAvailabilty::Limited(1));
     ctx.reroll_wound_rolls =
@@ -19,13 +16,20 @@ pub fn do_combat(
     ctx.reroll_damage_rolls =
       ctx.reroll_damage_rolls.max(RerollAvailabilty::Limited(1));
   }
-  if ctx.target_is_oath_target
-    && attacker.models[0].rules.contains(&ModelRule::OathOfMoment)
-  {
+  if ctx.target_is_oath_target && attacker.any_rule(ModelRule::OathOfMoment) {
     ctx.reroll_hit_rolls =
       ctx.reroll_hit_rolls.max(RerollAvailabilty::Unlimited);
     if ctx.oath_effect_wound_bonus {
       ctx.attacker_wound_modifier += 1;
+    }
+  }
+  if attacker.any_rule(ModelRule::ShockAssault) {
+    if ctx.defender_on_objective {
+      ctx.reroll_wound_rolls =
+        ctx.reroll_wound_rolls.max(RerollAvailabilty::Unlimited);
+    } else {
+      ctx.reroll_wound_rolls =
+        ctx.reroll_wound_rolls.max(RerollAvailabilty::RerollOnes);
     }
   }
 
@@ -78,72 +82,79 @@ pub fn do_combat(
     }
   }
 
-  let mut shooting_weapons = vec![];
+  let mut weapons_to_process = vec![];
   // gather weapons that will shoot.
   for model in attacker.models.iter() {
-    // per model, select from pistols or non-pistols. except that vehciles and
-    // monsters can skip this step.
-    let potential_guns: Vec<&Weapon> =
-      if model.rules.contains(&ModelRule::Vehicle)
-        || model.rules.contains(&ModelRule::Monster)
-      {
-        model.guns.iter().collect()
-      } else {
-        // the logic here is that if we have any non-pistols we will assume that
-        // they are the superior weapon and shoot them. Otherwise we just shoot
-        // whatever pistols we have.
-        let non_pistols: Vec<_> = model
-          .guns
-          .iter()
-          .filter(|g| !g.rules.contains(&WeaponRule::Pistol))
-          .collect();
-        if non_pistols.len() > 0 {
-          non_pistols
+    if ctx.is_melee {
+      let mut x = model.sticks[0].clone();
+      //
+      weapons_to_process.push(x);
+    } else {
+      // per model, select from pistols or non-pistols. except that vehciles and
+      // monsters can skip this step.
+      let potential_guns: Vec<&Weapon> =
+        if model.rules.contains(&ModelRule::Vehicle)
+          || model.rules.contains(&ModelRule::Monster)
+        {
+          model.guns.iter().collect()
         } else {
-          model
+          // the logic here is that if we have any non-pistols we will assume that
+          // they are the superior weapon and shoot them. Otherwise we just shoot
+          // whatever pistols we have.
+          let non_pistols: Vec<_> = model
             .guns
             .iter()
-            .filter(|g| g.rules.contains(&WeaponRule::Pistol))
-            .collect()
-        }
-      };
-
-    // todo: handle limits from firing in melee properly.
-    // todo: handle Big Guns Never Tire
-
-    for gun in potential_guns {
-      if gun.range >= ctx.range {
-        let mut x = gun.clone();
-        if apply_dark_pact_effect {
-          if ctx.dark_pact_for_sustained {
-            x.rules.push(WeaponRule::SustainedHits(Expr::_1));
+            .filter(|g| !g.rules.contains(&WeaponRule::Pistol))
+            .collect();
+          if non_pistols.len() > 0 {
+            non_pistols
           } else {
+            model
+              .guns
+              .iter()
+              .filter(|g| g.rules.contains(&WeaponRule::Pistol))
+              .collect()
+          }
+        };
+
+      // todo: handle limits from firing in melee properly.
+      // todo: handle Big Guns Never Tire
+
+      for gun in potential_guns {
+        if gun.range >= ctx.range {
+          let mut x = gun.clone();
+          if apply_dark_pact_effect {
+            if ctx.dark_pact_for_sustained {
+              x.rules.push(WeaponRule::SustainedHits(Expr::_1));
+            } else {
+              x.rules.push(WeaponRule::LethalHits);
+            }
+          }
+          if apply_lt_lethal_hits {
             x.rules.push(WeaponRule::LethalHits);
           }
-        }
-        if apply_lt_lethal_hits {
-          x.rules.push(WeaponRule::LethalHits);
-        }
-        if ctx.storm_of_fire {
-          x.rules.push(WeaponRule::IgnoresCover);
-          if ctx.devastator_doctrine {
-            x.ap += 1;
+          if ctx.storm_of_fire {
+            x.rules.push(WeaponRule::IgnoresCover);
+            if ctx.devastator_doctrine {
+              x.ap += 1;
+            }
           }
+          weapons_to_process.push(x);
         }
-        shooting_weapons.push(x);
       }
     }
   }
-  shooting_weapons.sort();
-  shooting_weapons.reverse();
+  weapons_to_process.sort();
+  weapons_to_process.reverse();
 
   let mut devastating = Vec::new();
+
   // shoot the weapons
-  for gun in shooting_weapons.iter() {
-    let weapon_is_lethal_hits = gun.rules.contains(&WeaponRule::LethalHits);
+  for wep in weapons_to_process.iter() {
+    let weapon_is_lethal_hits = wep.rules.contains(&WeaponRule::LethalHits);
     let weapon_is_devastating_wounds =
-      gun.rules.contains(&WeaponRule::DevastatingWounds);
-    let opt_sustained_hits = gun
+      wep.rules.contains(&WeaponRule::DevastatingWounds);
+    let opt_sustained_hits = wep
       .rules
       .iter()
       .filter_map(|r| match r {
@@ -151,9 +162,9 @@ pub fn do_combat(
         _ => None,
       })
       .max_by_key(|xpr| xpr.max_roll());
-    let mut attacks_todo = gun.attacks.roll(g);
-    if ctx.range <= (gun.range / 2) {
-      attacks_todo += gun
+    let mut attacks_todo = wep.attacks.roll(g);
+    if ctx.range <= (wep.range / 2) {
+      attacks_todo += wep
         .rules
         .iter()
         .filter_map(|r| match r {
@@ -168,7 +179,7 @@ pub fn do_combat(
     /*
      * ATTACK ROLL
      */
-    let base_hit_tn = gun.skill as i32;
+    let base_hit_tn = wep.skill as i32;
     let mut hit_tn_delta =
       if attacker.models[0].rules.contains(&ModelRule::Stealth) {
         ctx.attacker_hit_modifier - 1
@@ -197,6 +208,11 @@ pub fn do_combat(
               ctx.reroll_hit_rolls = RerollAvailabilty::NoRerolls;
             }
           }
+          RerollAvailabilty::RerollOnes => {
+            if attack_roll == 1 {
+              attack_roll = g.d6();
+            }
+          }
           RerollAvailabilty::Unlimited => {
             attack_roll = g.d6();
           }
@@ -221,7 +237,7 @@ pub fn do_combat(
      */
     let defender_toughness =
       if let Some(m) = defender.models.get(0) { m.toughness } else { return };
-    let base_wound_tn = calc_base_wound_tn(gun.strength, defender_toughness);
+    let base_wound_tn = calc_base_wound_tn(wep.strength, defender_toughness);
     let mut wound_tn_delta = ctx.attacker_wound_modifier;
     if defender.any_rule(ModelRule::CommandSquad)
       && defender.any_rule(ModelRule::Character)
@@ -232,7 +248,7 @@ pub fn do_combat(
     // subtract so that a roll modifier becomes a tn modifier
     let wound_tn = base_wound_tn - wound_tn_delta;
     let mut crit_wound_tn = 6;
-    for weapon_rule in gun.rules.iter() {
+    for weapon_rule in wep.rules.iter() {
       if let WeaponRule::Anti(model_rule, x) = weapon_rule {
         if defender.models[0].rules.contains(model_rule) {
           crit_wound_tn = crit_wound_tn.min(*x as i32);
@@ -243,7 +259,7 @@ pub fn do_combat(
       let mut wound_roll = g.d6();
 
       if wound_roll < wound_tn {
-        if gun.rules.contains(&WeaponRule::TwinLinked) {
+        if wep.rules.contains(&WeaponRule::TwinLinked) {
           wound_roll = g.d6();
         } else {
           match ctx.reroll_wound_rolls {
@@ -256,6 +272,11 @@ pub fn do_combat(
                 ctx.reroll_wound_rolls = RerollAvailabilty::NoRerolls;
               }
             }
+            RerollAvailabilty::RerollOnes => {
+              if wound_roll == 1 {
+                wound_roll = g.d6();
+              }
+            }
             RerollAvailabilty::Unlimited => wound_roll = g.d6(),
           }
         }
@@ -263,7 +284,7 @@ pub fn do_combat(
 
       if wound_roll >= crit_wound_tn {
         if weapon_is_devastating_wounds {
-          devastating.push(gun.damage.roll(g));
+          devastating.push(wep.damage.roll(g));
         } else {
           required_save_rolls += 1;
         }
@@ -272,7 +293,7 @@ pub fn do_combat(
       }
     }
 
-    let effective_ap = (i32::from(gun.ap) + ctx.attacker_ap_modifier).max(0);
+    let effective_ap = (i32::from(wep.ap) + ctx.attacker_ap_modifier).max(0);
 
     /*
      * SAVE ROLL
@@ -280,9 +301,10 @@ pub fn do_combat(
     for _ in 0..required_save_rolls {
       let target_index = 0;
       if let Some(def) = defender.models.get_mut(target_index) {
-        let benefit_of_cover = if ctx.defender_has_cover
+        let benefit_of_cover = if !ctx.is_melee
+          && ctx.defender_has_cover
           && !(def.armor <= 3 && effective_ap == 0)
-          && !gun.rules.contains(&WeaponRule::IgnoresCover)
+          && !wep.rules.contains(&WeaponRule::IgnoresCover)
         {
           1
         } else {
@@ -293,20 +315,25 @@ pub fn do_combat(
         let save_tn = armor_tn.min(i32::from(invuln_tn));
         let save_roll = g.d6();
         if save_roll < i32::from(save_tn) {
-          let mut damage_roll = gun.damage.roll(g);
+          let mut damage_roll = wep.damage.roll(g);
 
-          if gun.damage.reroll_favored(damage_roll) {
+          if wep.damage.reroll_favored(damage_roll) {
             match ctx.reroll_damage_rolls {
               RerollAvailabilty::NoRerolls => (),
               RerollAvailabilty::Limited(n) => {
                 if n > 0 {
-                  damage_roll = gun.damage.roll(g);
+                  damage_roll = wep.damage.roll(g);
                   ctx.reroll_damage_rolls = RerollAvailabilty::Limited(n - 1);
                 } else {
                   ctx.reroll_damage_rolls = RerollAvailabilty::NoRerolls;
                 }
               }
-              RerollAvailabilty::Unlimited => damage_roll = gun.damage.roll(g),
+              RerollAvailabilty::RerollOnes => {
+                if damage_roll == wep.damage.min_roll() {
+                  damage_roll = wep.damage.roll(g);
+                }
+              }
+              RerollAvailabilty::Unlimited => damage_roll = wep.damage.roll(g),
             }
           }
 
@@ -454,6 +481,14 @@ impl Expr {
     }
   }
 
+  pub fn min_roll(&self) -> i32 {
+    match self {
+      Self::F(x) => i32::from(*x),
+      Self::D3(x, y) => i32::from(*x) + i32::from(*y),
+      Self::D6(x, y) => i32::from(*x) + i32::from(*y),
+    }
+  }
+
   pub fn max_roll(&self) -> i32 {
     match self {
       Self::F(x) => i32::from(*x),
@@ -510,6 +545,7 @@ pub enum ModelRule {
   CommandSquad,
   TacticalPrecision,
   Lieutenant,
+  ShockAssault,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -571,5 +607,6 @@ pub enum RerollAvailabilty {
   #[default]
   NoRerolls,
   Limited(u32),
+  RerollOnes,
   Unlimited,
 }

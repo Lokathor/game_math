@@ -5,36 +5,32 @@ use game_math::*;
 fn main() {
   let mut g = randomize::PCG32K::<1024>::from_getrandom().unwrap();
   for target_is_oath_target in [false, true] {
-    for with_lt in [false, true] {
-      for storm_of_fire in [false, true] {
-        let trials = 100000;
-        let mut remaining_total = 0_u64;
-        for _ in 0..trials {
-          let heroes = company_heroes();
-          let lt = lieutenant(Some(company_heroes()));
-          let mut a = marneus_calgar(Some(if with_lt { lt } else { heroes }));
-          let mut d = gladiator_lancer_w_grenades();
-          let context = Context {
-            range: 9,
-            target_is_oath_target,
-            storm_of_fire,
-            devastator_doctrine: true,
-            oath_effect_wound_bonus: true,
-            defender_has_cover: false,
-            ..Default::default()
-          };
-          do_combat(&mut g, &mut a, &mut d, context);
-          let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
-          remaining_total += remaining;
-        }
-        let average_remaining = (remaining_total as f64) / (trials as f64);
-        let lt_txt = if with_lt { "w/LT" } else { "NoLT" };
-        let oath = if target_is_oath_target { "Oath" } else { "NoRR" };
-        let storm = if storm_of_fire { "Storm" } else { "NoStm" };
-        println!(
-          "[{oath}][{lt_txt}][{storm}] Avg Wnds Remaining: {average_remaining:0.3} (lower is better)"
-        );
+    for strat in [0] {
+      let trials = 100000;
+      let mut remaining_total = 0_u64;
+      for _ in 0..trials {
+        let mut a = assault_intercessors(5);
+        let mut d = a.clone();
+        let context = Context {
+          range: 1,
+          defender_on_objective: true,
+          is_melee: true,
+          target_is_oath_target,
+          oath_effect_wound_bonus: true,
+          attacker_wound_modifier: strat,
+          attacker_ap_modifier: strat,
+          ..Default::default()
+        };
+        do_combat(&mut g, &mut a, &mut d, context);
+        let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
+        remaining_total += remaining;
       }
+      let average_remaining = (remaining_total as f64) / (trials as f64);
+      let oath = if target_is_oath_target { "Oath" } else { "NoRR" };
+      let strat_txt = if strat != 0 { "Strat" } else { "NoStr" };
+      println!(
+        "[{oath}][{strat_txt}] Avg Wnds Remaining: {average_remaining:0.3} (lower is better)"
+      );
     }
   }
 }

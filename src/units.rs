@@ -903,3 +903,83 @@ pub fn lieutenant(bodyguard: Option<Unit>) -> Unit {
     Unit { name: "Lieutenant".into(), models: vec![lt], starting_models: 1 }
   }
 }
+
+pub fn assault_intercessors(count: u8) -> Unit {
+  let basic = Model {
+    name: "Assault Intercessor".into(),
+    speed: 6,
+    toughness: 4,
+    armor: 3,
+    health: 2,
+    starting_health: 2,
+    leadership: 6,
+    oc: 2,
+    guns: vec![Weapon {
+      name: "Heavy Bolt Pistol".into(),
+      range: 18,
+      attacks: Expr::_1,
+      skill: 3,
+      strength: 4,
+      ap: 1,
+      damage: Expr::_1,
+      rules: vec![WeaponRule::Pistol],
+    }],
+    sticks: vec![Weapon {
+      name: "Chainsword".into(),
+      range: 1,
+      attacks: Expr::_4,
+      skill: 3,
+      strength: 4,
+      ap: 1,
+      damage: Expr::_1,
+      rules: vec![],
+    }],
+    rules: vec![
+      ModelRule::Battleline,
+      ModelRule::Infantry,
+      ModelRule::Grenades,
+      ModelRule::Imperium,
+      ModelRule::Tacticus,
+      ModelRule::ShockAssault,
+      ModelRule::OathOfMoment,
+    ],
+    ..Default::default()
+  };
+
+  let sergeant = Model {
+    guns: vec![Weapon {
+      name: "Plasma Pistol (Standard)".into(),
+      range: 12,
+      attacks: Expr::_1,
+      skill: 2,
+      strength: 7,
+      ap: 2,
+      damage: Expr::_1,
+      rules: vec![WeaponRule::Pistol],
+    }],
+    sticks: vec![Weapon {
+      name: "Power Fist".into(),
+      range: 1,
+      attacks: Expr::_3,
+      skill: 3,
+      strength: 8,
+      ap: 2,
+      damage: Expr::_2,
+      rules: vec![],
+    }],
+    ..basic.clone()
+  };
+
+  let mut out = Unit {
+    name: "Assault Intercesors".into(),
+    models: Vec::new(),
+    starting_models: count,
+  };
+
+  while out.models.len() < (usize::from(count) - 1) {
+    out.models.push(basic.clone())
+  }
+  out.models.push(sergeant);
+
+  out
+}
