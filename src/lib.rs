@@ -184,6 +184,9 @@ pub fn do_combat(
         .map(|xpr| xpr.roll(g))
         .unwrap_or(0);
     }
+    if wep.rules.contains(&WeaponRule::Blast) {
+      attacks_todo += (defender.models.len() / 5) as i32;
+    }
 
     /*
      * ATTACK ROLL
