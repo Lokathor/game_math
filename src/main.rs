@@ -4,39 +4,27 @@ use game_math::*;
 
 fn main() {
   let mut g = randomize::PCG32K::<1024>::from_getrandom().unwrap();
-  for target_is_oath_target in [false, true] {
-    for strat in [0] {
-      let trials = 100000;
-      let mut remaining_total = 0_u64;
-      for _ in 0..trials {
-        let mut a = assault_intercessors(5);
-        let mut d = a.clone();
-        // shoot
-        let context = Context {
-          range: 2,
-          defender_on_objective: true,
-          is_melee: false,
-          target_is_oath_target,
-          oath_effect_wound_bonus: true,
-          attacker_wound_modifier: strat,
-          attacker_ap_modifier: strat,
-          ..Default::default()
-        };
-        do_combat(&mut g, &mut a, &mut d, context);
-        // melee
-        let context = Context { range: 1, is_melee: true, ..context };
-        do_combat(&mut g, &mut a, &mut d, context);
-        let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
-        remaining_total += remaining;
-      }
-      let average_remaining = (remaining_total as f64) / (trials as f64);
-      let oath = if target_is_oath_target { "Oath" } else { "NoRR" };
-      let strat_txt = if strat != 0 { "Strat" } else { "NoStr" };
-      println!(
-        "[{oath}][{strat_txt}] Avg Wnds Remaining: {average_remaining:0.3} (lower is better)"
-      );
+
+  let trials = 100000;
+  let mut remaining_total = 0_u64;
+  let mut wipeout_total = 0_u64;
+  for _ in 0..trials {
+    let mut a = possessed(5);
+    let mut d = assault_intercessors(5);
+    // melee
+    let context = Context { range: 1, is_melee: true, ..Default::default() };
+    do_combat(&mut g, &mut a, &mut d, context);
+    let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
+    remaining_total += remaining;
+    if remaining == 0 {
+      wipeout_total += 1;
     }
   }
+  let average_remaining = (remaining_total as f64) / (trials as f64);
+  let wipeout_rate = (wipeout_total as f64) / (trials as f64) * 100.0;
+  println!(
+    "Avg Wnds Remaining (low is better): {average_remaining:0.3};; Wipeout Rate (high is better): {wipeout_rate:0.0}%"
+  );
 }
 
 #[allow(dead_code)]

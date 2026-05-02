@@ -983,3 +983,43 @@ pub fn assault_intercessors(count: u8) -> Unit {
 
   out
 }
+
+pub fn possessed(count: u8) -> Unit {
+  let p = Model {
+    name: "Possessed".into(),
+    speed: 9,
+    toughness: 6,
+    armor: 3,
+    invuln: Some(5),
+    health: 3,
+    starting_health: 3,
+    leadership: 6,
+    oc: 1,
+    sticks: vec![Weapon {
+      name: "Hideous Mutations".into(),
+      range: 1,
+      attacks: Expr::F(4),
+      skill: 3,
+      strength: 5,
+      ap: 1,
+      damage: Expr::_2,
+      rules: vec![],
+    }],
+    rules: vec![
+      ModelRule::Infantry,
+      ModelRule::Chaos,
+      ModelRule::Daemon,
+      ModelRule::Possessed,
+    ],
+    ..Default::default()
+  };
+
+  let mut u =
+    Unit { name: "Possessed".into(), models: vec![], starting_models: count };
+  while u.models.len() < usize::from(count) {
+    u.models.push(p.clone());
+  }
+  u.models.last_mut().unwrap().rules.push(ModelRule::ChaosIcon);
+
+  u
+}

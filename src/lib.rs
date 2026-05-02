@@ -558,6 +558,8 @@ pub enum ModelRule {
   TacticalPrecision,
   Lieutenant,
   ShockAssault,
+  Daemon,
+  Possessed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
