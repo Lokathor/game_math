@@ -1010,6 +1010,7 @@ pub fn possessed(count: u8) -> Unit {
       ModelRule::Chaos,
       ModelRule::Daemon,
       ModelRule::Possessed,
+      ModelRule::DarkPacts,
     ],
     ..Default::default()
   };

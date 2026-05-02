@@ -43,8 +43,10 @@ pub fn do_combat(
   }
 
   let mut apply_dark_pact_effect = false;
+  let mut dark_pact_successful = false;
   if attacker.models.iter().any(|m| m.rules.contains(&ModelRule::DarkPacts)) {
     // trigger a dark pact
+    apply_dark_pact_effect = true;
     let unit_leadership = i32::from(
       attacker.models.iter().map(|m| m.leadership).min().unwrap_or_default(),
     );
@@ -54,7 +56,9 @@ pub fn do_combat(
     {
       leadership_roll = g.d6() + g.d6();
     }
-    if leadership_roll < unit_leadership {
+    if leadership_roll >= unit_leadership {
+      dark_pact_successful = true;
+    } else {
       let damage_roll = Expr::D3(1, 0).roll(g);
       for _ in 0..damage_roll {
         let target_index = 0;
@@ -74,7 +78,6 @@ pub fn do_combat(
         }
       }
     }
-    apply_dark_pact_effect = true;
     if attacker
       .models
       .iter()
@@ -97,6 +100,16 @@ pub fn do_combat(
     if ctx.is_melee {
       let mut x = model.sticks[0].clone();
       //
+      if apply_dark_pact_effect {
+        if ctx.dark_pact_for_sustained {
+          x.rules.push(WeaponRule::SustainedHits(Expr::_1));
+        } else {
+          x.rules.push(WeaponRule::LethalHits);
+        }
+      }
+      if apply_lt_lethal_hits {
+        x.rules.push(WeaponRule::LethalHits);
+      }
       weapons_to_process.push(x);
     } else {
       // per model, select from pistols or non-pistols. except that vehciles and
@@ -138,6 +151,7 @@ pub fn do_combat(
             } else {
               x.rules.push(WeaponRule::LethalHits);
             }
+          } else {
           }
           if apply_lt_lethal_hits {
             x.rules.push(WeaponRule::LethalHits);
@@ -201,7 +215,10 @@ pub fn do_combat(
       .clamp(-1, 1);
     // subtract so that a roll modifier becomes a tn modifier
     let hit_tn = base_hit_tn - hit_tn_delta;
-    let crit_tn = 6;
+    let mut crit_tn = 6;
+    if ctx.is_melee && ctx.mark_of_slaanesh && dark_pact_successful {
+      crit_tn = 5;
+    }
     let mut required_wound_rolls = 0;
     let mut required_save_rolls = 0;
 
@@ -606,6 +623,7 @@ pub struct Context {
   pub defender_on_objective: bool,
   pub attacker_controls_objective: bool,
   pub defender_controls_objective: bool,
+  pub mark_of_slaanesh: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

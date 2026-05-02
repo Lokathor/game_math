@@ -5,26 +5,48 @@ use game_math::*;
 fn main() {
   let mut g = randomize::PCG32K::<1024>::from_getrandom().unwrap();
 
-  let trials = 100000;
-  let mut remaining_total = 0_u64;
-  let mut wipeout_total = 0_u64;
-  for _ in 0..trials {
-    let mut a = possessed(5);
-    let mut d = assault_intercessors(5);
-    // melee
-    let context = Context { range: 1, is_melee: true, ..Default::default() };
-    do_combat(&mut g, &mut a, &mut d, context);
-    let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
-    remaining_total += remaining;
-    if remaining == 0 {
-      wipeout_total += 1;
+  for mark_of_slaanesh in [false, true] {
+    for dev_wounds in [false, true] {
+      let trials = 100000;
+      let mut remaining_total = 0_u64;
+      let mut wipeout_total = 0_u64;
+      for _ in 0..trials {
+        let mut a = possessed(5);
+        if dev_wounds {
+          a.models.iter_mut().for_each(|m| {
+            m.sticks
+              .last_mut()
+              .unwrap()
+              .rules
+              .push(WeaponRule::DevastatingWounds)
+          });
+        }
+        let mut d = assault_intercessors(5);
+        // melee
+        let context = Context {
+          range: 1,
+          is_melee: true,
+          dark_pact_for_sustained: true,
+          mark_of_slaanesh,
+          ..Default::default()
+        };
+        do_combat(&mut g, &mut a, &mut d, context);
+
+        let remaining: u64 = d.models.iter().map(|m| m.health as u64).sum();
+        remaining_total += remaining;
+        if remaining == 0 {
+          wipeout_total += 1;
+        }
+      }
+      let average_remaining = (remaining_total as f64) / (trials as f64);
+      let wipeout_rate = (wipeout_total as f64) / (trials as f64) * 100.0;
+      let dev_txt = if dev_wounds { "DevWnd" } else { "NoDevs" };
+      let mark_txt = if mark_of_slaanesh { "Slaanesh" } else { "NoMark.." };
+      println!(
+        "[{mark_txt}][{dev_txt}] Wipeout Rate (high is better): {wipeout_rate:0.0}%;; Avg Wnds Remaining (low is better): {average_remaining:0.3}"
+      );
     }
   }
-  let average_remaining = (remaining_total as f64) / (trials as f64);
-  let wipeout_rate = (wipeout_total as f64) / (trials as f64) * 100.0;
-  println!(
-    "Avg Wnds Remaining (low is better): {average_remaining:0.3};; Wipeout Rate (high is better): {wipeout_rate:0.0}%"
-  );
 }
 
 #[allow(dead_code)]
